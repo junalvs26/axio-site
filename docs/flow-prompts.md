@@ -31,31 +31,36 @@ Hyper-detailed, clean, product-photography quality.
 
 ---
 
-## 01 · impact (a chegada)
-Night, wet empty city plaza, near-total darkness, rain falling. Camera very low, almost touching
-the wet ground, looking slightly up. Silence and stillness. Far in the sky, a thin orange streak
-descends fast and controlled — not falling, DIVING with intent. The robot comes down feet-first
-and lands in a perfect superhero landing in the center of frame: one knee down, one fist pressed
-into the ground, other arm back, head lowered. At the exact moment of contact the shot goes into
-extreme slow motion: a perfectly circular shockwave ring expands across the wet ground, pushing
-every raindrop and puddle outward in a clean radial wave; a ring of reflected orange light
-ripples across the water; the ground beneath the fist cracks in a precise radial pattern
-glowing faintly orange from inside. No debris clouds, no explosion — the impact is clean,
-heavy and controlled, like power being placed, not crashing. The camera reacts with a single
-deep bass-like jolt, then the slow motion releases back to real time. Rain resumes falling
-around the motionless robot. Steam rises gently from its shoulders. The orange seam lines pulse
-once, then dim. Last frame: the robot frozen in the landing pose, head down, centered, small
-orange reflections around it on the wet ground, dominant and silent.
+## 01 · impact (a chegada — uma única tomada contínua)
+Obs.: tudo em câmera lenta cinematográfica contínua — o scroll do site controla a velocidade.
 
-## 02 · awakening
-Start from the robot frozen in the superhero landing pose in the rain. Slow dolly-in to an extreme close-up of its
-face/visor. Rain drips on metal. The capsule visor ignites orange #FF6B23 from dark, flickers once,
-then stabilizes; the orange light softly rakes across the smooth matte armor around it.
-The small round sensor lights a beat later. Visor optics make a tiny focusing adjustment.
-Last frame: the glowing visor centered, dark negative space above for a title.
+Night, wet empty city plaza, rain falling, near-total darkness. Camera very low, close to the
+wet ground, looking slightly up. A thin orange streak dives out of the dark sky — fast, controlled,
+with intent. The robot lands feet-first in a powerful superhero landing in the center of frame:
+one knee down, one fist striking the ground, other arm back, head lowered. On contact, a heavy
+circular shockwave blasts outward across the wet ground: puddles burst into sheets of water,
+the pavement cracks radially beneath the fist with a faint orange glow inside the cracks, and
+chunks of debris, stones and concrete fragments are thrown UP into the air around the robot,
+rising and hanging in slow motion with rain droplets, lit by orange reflections. The camera
+takes one heavy jolt from the impact. While the debris is still floating upward, the robot
+slowly raises its head and lifts its gaze toward the camera. The camera pushes in smoothly and
+racks focus onto its capsule visor, which ignites bright orange #FF6B23 from dark, flickers once
+and locks on; the orange light rakes across the smooth matte helmet; the small round sensor
+above the visor lights a beat later. Debris begins to fall back down around it.
+Last frame: close-up of the robot's face, glowing orange visor centered and staring into the
+lens, debris and rain suspended around, dark negative space above.
+
+## 02 · awakening (o olhar — continuação direta da 01)
+Start exactly on the close-up of the glowing orange visor staring into the lens, debris and rain
+suspended in the air. Extreme close-up, very slow push-in. The visor optics make a precise
+focusing adjustment, like a lens locking onto a target; the orange glow intensifies and pulses
+once, lighting the falling raindrops in front of it. Hold, intense and still.
+Then the camera begins a slow pull back, revealing the helmet and shoulders, the subtle engraved
+emblem on the left shoulder catching the orange light for a moment.
+Last frame: robot head and shoulders, visor glowing, dark negative space above for a title.
 
 ## 03 · city
-Pull back and crane up behind the robot, still in its landing pose, to reveal a vast rainy city at night: towers,
+Continue pulling back and crane up behind the robot, still kneeling in its landing pose, to reveal a vast rainy city at night: towers,
 distant lights, traffic streaks, humid haze. Rack focus to a glass office high in a nearby
 building: a realistic businessperson (30s–40s, tired, sleeves rolled up) alone at a desk, lit by
 multiple screens and a phone constantly lighting up with notifications, hand on forehead.
