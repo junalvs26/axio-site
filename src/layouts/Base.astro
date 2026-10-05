@@ -8,6 +8,7 @@ const { title, description } = Astro.props;
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
+    <script is:inline>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("is-cinema")</script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />

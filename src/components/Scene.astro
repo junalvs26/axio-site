@@ -1,0 +1,60 @@
+---
+import type { Scene } from '../scenes/types';
+import { beats, chapters } from '../content/site';
+import Beat from './Beat.astro';
+import { STORY_VH } from '../scenes/config';
+
+interface Props { scene: Scene }
+const { scene } = Astro.props;
+const list = beats[scene.id] ?? [];
+const heightVh = Math.round((scene.range[1] - scene.range[0]) * STORY_VH);
+---
+<section
+  class="scene"
+  id={scene.id}
+  data-scene={scene.id}
+  style={`--scene-h:${heightVh}vh`}
+  aria-label={chapters[scene.id]}
+>
+  <div class="scene__frame">
+    <div class="scene__beats" data-layout={scene.id}>
+      {list.map((b, i) => <Beat beat={b} sceneId={scene.id} index={i} />)}
+    </div>
+  </div>
+  {scene.media.poster && (
+    <img class="scene__poster" src={scene.media.poster} alt="" loading="lazy" decoding="async" />
+  )}
+</section>
+
+<style>
+  .scene { position: relative; z-index: 2; }
+  .scene__frame {
+    min-height: 100svh;
+    padding: calc(var(--nav-h) + 6vh) var(--gutter) 10vh;
+    display: grid;
+  }
+  .scene__beats { position: relative; display: grid; gap: 1.25rem; align-content: end; max-width: 1440px; width: 100%; margin: 0 auto; }
+  .scene__poster { display: none; }
+
+  /* Composições por cena: o texto nunca fica no mesmo lugar duas vezes. */
+  [data-layout='impact'] { align-content: end; justify-items: center; text-align: center; }
+  [data-layout='awakening'] { align-content: center; justify-items: center; text-align: center; padding-top: 22vh; }
+  [data-layout='city'] { align-content: end; max-width: 1440px; }
+  [data-layout='city'] > :global(*) { max-width: 26ch; }
+  [data-layout='city'] > :global(.beat--line) { max-width: 46ch; }
+  [data-layout='analysis'] { align-content: center; justify-items: end; }
+  [data-layout='action'] { align-content: end; }
+  [data-layout='solution'] { align-content: center; }
+  [data-layout='transformation'] { align-content: start; justify-items: end; text-align: right; padding-top: 8vh; }
+  [data-layout='final'] { align-content: center; justify-items: center; text-align: center; padding-top: 30vh; }
+
+  /* Modo cinema: a seção ganha altura de scroll e o quadro fica fixo enquanto a cena roda. */
+  :global(html.is-cinema) .scene { height: var(--scene-h); }
+  :global(html.is-cinema) .scene__frame { position: sticky; top: 0; height: 100svh; min-height: 0; overflow: hidden; }
+
+  /* Modo estático (sem JS / movimento reduzido): poster como ilustração editorial. */
+  :global(html:not(.is-cinema)) .scene__poster {
+    display: block; width: min(100% - 2 * var(--gutter), 1200px); margin: 0 auto 12vh;
+    aspect-ratio: 16 / 9; object-fit: cover; border-radius: 2px;
+  }
+</style>

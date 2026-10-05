@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-// @ts-expect-error módulo .mjs sem tipos
 import { scanMedia } from '../scripts/scan-media.mjs';
 
 describe('scanMedia', () => {

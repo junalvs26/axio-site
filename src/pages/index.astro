@@ -1,6 +1,37 @@
 ---
 import Base from '../layouts/Base.astro';
+import Stage from '../components/Stage.astro';
+import Nav from '../components/Nav.astro';
+import Scene from '../components/Scene.astro';
+import { scenes } from '../scenes/config';
+import { normalizeRanges } from '../scenes/timeline';
+import { meta } from '../content/site';
+
+const list = normalizeRanges(scenes);
 ---
-<Base title="Axio" description="Axio — inteligência artificial em operação.">
-  <main></main>
+<Base title={meta.title} description={meta.description}>
+  <a class="sr-only" href="#final">Pular para o contato</a>
+  <Nav scenes={list} />
+  <Stage />
+  <main id="story">
+    {list.map((s) => <Scene scene={s} />)}
+  </main>
+  <footer class="foot">
+    <img src="/brand/logo-negativo.png" alt="Axio" width="1966" height="238" loading="lazy" />
+    <p>© {new Date().getFullYear()} Axio</p>
+  </footer>
+  <script>
+    import { boot } from '../runtime/boot';
+    boot();
+  </script>
 </Base>
+
+<style>
+  .foot {
+    position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center;
+    padding: 3rem var(--gutter); border-top: 1px solid var(--c-line); color: var(--c-steel);
+    font: 400 .75rem/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; background: var(--c-ink);
+  }
+  .foot img { width: 90px; height: auto; }
+  .foot p { margin: 0; }
+</style>

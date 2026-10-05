@@ -1,0 +1,70 @@
+---
+import type { Scene } from '../scenes/types';
+import { chapters, cta } from '../content/site';
+interface Props { scenes: Scene[] }
+const { scenes } = Astro.props;
+import { existsSync } from 'node:fs';
+const hasSound = existsSync('public/sound/ambience.mp3');
+---
+<header class="nav">
+  <a class="nav__brand" href="#impact" aria-label="Axio — voltar ao início">
+    <img src="/brand/logo-negativo.png" alt="" width="1966" height="238" />
+  </a>
+  <nav class="nav__chapters" aria-label="Capítulos">
+    <ol>
+      {scenes.map((s, i) => (
+        <li>
+          <a href={`#${s.id}`} data-chapter={s.id}>
+            <span class="nav__no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span class="nav__label">{chapters[s.id]}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+  {hasSound && <button class="nav__sound" type="button" data-sound data-src="/sound/ambience.mp3" aria-pressed="false">Som</button>}
+  <a class="nav__cta" href={cta.href} data-cta>{cta.label}</a>
+  <div class="nav__progress" aria-hidden="true"><span></span></div>
+</header>
+
+<style>
+  .nav {
+    position: fixed; inset: 0 0 auto; z-index: 10; height: var(--nav-h);
+    display: flex; align-items: center; gap: 2rem;
+    padding: 0 var(--gutter);
+    background: linear-gradient(180deg, rgba(1, 10, 24, .75), transparent);
+  }
+  .nav__brand img { width: 108px; height: auto; }
+  .nav__chapters { flex: 1; }
+  .nav__chapters ol { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; gap: .25rem; }
+  .nav__chapters a {
+    display: inline-flex; gap: .4rem; align-items: baseline; padding: .5rem .6rem; text-decoration: none;
+    font: 500 .7rem/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c-steel);
+    transition: color .3s;
+  }
+  .nav__no { opacity: .55; }
+  .nav__chapters a:hover { color: var(--c-text); }
+  .nav__chapters a[aria-current='step'] { color: var(--c-text); }
+  .nav__chapters a[aria-current='step'] .nav__no { color: var(--c-orange); opacity: 1; }
+  .nav__sound { background: none; border: 0; color: var(--c-steel); font: 500 .7rem/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+  .nav__sound[aria-pressed='true'] { color: var(--c-orange); }
+  .nav__cta {
+    padding: .7rem 1.1rem; border: 1px solid var(--c-orange); border-radius: 999px; text-decoration: none;
+    font: 500 .8rem/1 var(--f-display); letter-spacing: .02em; color: var(--c-text);
+    transition: background .3s, color .3s;
+  }
+  .nav__cta:hover { background: var(--c-orange); color: var(--c-ink); }
+  .nav__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--c-line); }
+  .nav__progress span { display: block; height: 100%; background: var(--c-orange); transform-origin: left; transform: scaleX(var(--p, 0)); }
+
+  @media (max-width: 1100px) {
+    .nav__label { display: none; }
+    .nav__chapters a { padding: .5rem .35rem; }
+  }
+  @media (max-width: 720px) {
+    .nav { gap: 1rem; justify-content: space-between; }
+    .nav__chapters { display: none; }
+
+    .nav__brand img { width: 88px; }
+  }
+</style>
