@@ -42,11 +42,11 @@ const heightVh = Math.round((scene.range[1] - scene.range[0]) * STORY_VH);
   [data-layout='city'] { align-content: end; max-width: 1440px; }
   [data-layout='city'] > :global(*) { max-width: 26ch; }
   [data-layout='city'] > :global(.beat--line) { max-width: 46ch; }
-  [data-layout='analysis'] { align-content: center; justify-items: end; }
+  [data-layout='analysis'] { align-content: center; justify-items: start; max-width: 560px; margin-right: 0; }
   [data-layout='action'] { align-content: end; }
   [data-layout='solution'] { align-content: center; }
   [data-layout='transformation'] { align-content: start; justify-items: end; text-align: right; padding-top: 8vh; }
-  [data-layout='final'] { align-content: center; justify-items: center; text-align: center; padding-top: 30vh; }
+  [data-layout='final'] { align-content: center; justify-items: center; text-align: center; padding-top: 38vh; }
 
   /* Modo cinema: a seção ganha altura de scroll e o quadro fica fixo enquanto a cena roda. */
   :global(html.is-cinema) .scene { height: var(--scene-h); }

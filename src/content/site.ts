@@ -46,12 +46,12 @@ export const beats: Partial<Record<SceneId, Beat[]>> = {
     { kind: 'line', text: slogan, at: 0.65 },
   ],
   city: [
-    { kind: 'kicker', text: '01 — O cenário', at: 0.1 },
+    { kind: 'kicker', text: 'O cenário', at: 0.1 },
     { kind: 'title', text: 'Toda empresa produz mais informação do que consegue enxergar.', at: 0.25 },
     { kind: 'line', text: 'Conversas, decisões e oportunidades se espalham pela operação — e a pessoa que responde por tudo fica sozinha para juntar as partes.', at: 0.55 },
   ],
   analysis: [
-    { kind: 'kicker', text: '02 — Varredura', at: 0.05 },
+    { kind: 'kicker', text: 'Varredura', at: 0.05 },
     {
       kind: 'list',
       text: 'Pontos cegos identificados',
@@ -65,14 +65,14 @@ export const beats: Partial<Record<SceneId, Beat[]>> = {
     },
   ],
   action: [
-    { kind: 'kicker', text: '03 — Em movimento', at: 0.02 },
+    { kind: 'kicker', text: 'Em movimento', at: 0.02 },
     { kind: 'step', title: 'Axio', text: 'Colocamos inteligência artificial para operar dentro da sua empresa, em qualquer setor.', at: 0.06 },
     { kind: 'step', title: 'Axio OS', text: 'Nosso sistema operacional. A camada que reúne o que a sua operação produz e coloca IA trabalhando em cima disso.', at: 0.3 },
     { kind: 'step', title: 'Consultoria de IA', text: 'Identificamos onde a inteligência artificial gera resultado na sua operação e conduzimos a aplicação.', at: 0.54 },
     { kind: 'step', title: 'Parceria tecnológica', text: 'Desenvolvemos os sistemas e programas de que a sua empresa precisa, e seguimos ao lado depois da entrega.', at: 0.78 },
   ],
   solution: [
-    { kind: 'kicker', text: '04 — Solução', at: 0.05 },
+    { kind: 'kicker', text: 'Solução', at: 0.05 },
     { kind: 'title', text: thesis, at: 0.15 },
     {
       kind: 'list',
@@ -86,7 +86,7 @@ export const beats: Partial<Record<SceneId, Beat[]>> = {
     },
   ],
   transformation: [
-    { kind: 'kicker', text: '05 — Avanço', at: 0.1 },
+    { kind: 'kicker', text: 'Avanço', at: 0.1 },
     { kind: 'title', text: 'Você não precisa sustentar a operação sozinho.', at: 0.25 },
     { kind: 'line', text: 'A Axio fica como infraestrutura: presente, precisa e trabalhando enquanto a empresa avança.', at: 0.55 },
   ],

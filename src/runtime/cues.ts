@@ -39,7 +39,7 @@ export function cues(id: SceneId, l: number): Cues {
     case 'final':
       return {
         ...BASE, visor: ramp(l, 0.05, 0.35), ignite: ramp(l, 0.15, 0.45), sensor: l >= 0.4 ? 1 : 0,
-        visorScale: 0.85 + ramp(l, 0, 1) * 0.4, warm: 0.3 + ramp(l, 0.2, 0.6) * 0.3, glow: 0.4, rain: 0.2,
+        visorScale: 0.72 + ramp(l, 0, 1) * 0.2, warm: 0.3 + ramp(l, 0.2, 0.6) * 0.3, glow: 0.4, rain: 0.2,
       };
     default:
       return BASE;
