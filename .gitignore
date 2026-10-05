@@ -1,0 +1,7 @@
+node_modules
+dist
+.astro
+.vercel
+.superpowers
+test-results
+playwright-report

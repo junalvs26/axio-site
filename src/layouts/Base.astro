@@ -1,0 +1,25 @@
+---
+import '../styles/tokens.css';
+import '../styles/base.css';
+interface Props { title: string; description: string }
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#010A18" />
+    <link rel="icon" href="/brand/logo.png" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@300;400;500;600&display=swap" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
