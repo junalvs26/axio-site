@@ -6,9 +6,11 @@ import { cta } from '../content/site';
 interface Props { beat: Beat; sceneId: SceneId; index: number }
 const { beat, sceneId } = Astro.props;
 const isHero = sceneId === 'awakening' && beat.kind === 'title';
+// O primeiro texto da primeira cena já nasce visível: é o que aparece antes do JS (e o LCP).
+const initiallyOn = sceneId === 'impact' && beat.at === 0;
 const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0') : '';
 ---
-<div class={`beat beat--${beat.kind}`} data-at={beat.at} data-kind={beat.kind}>
+<div class={`beat beat--${beat.kind}${initiallyOn ? ' is-on' : ''}`} data-at={beat.at} data-kind={beat.kind}>
   {beat.kind === 'kicker' && <p class="kicker"><span class="kicker__tick" aria-hidden="true"></span><span data-decode>{beat.text}</span></p>}
 
   {beat.kind === 'title' && isHero && (
@@ -53,7 +55,6 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
 </div>
 
 <style>
-  .beat { will-change: opacity, transform; }
 
   .kicker {
     margin: 0; display: inline-flex; align-items: center; gap: .75rem;
@@ -100,8 +101,8 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
   .cta-final:hover .cta-final__arrow { transform: translateX(4px); }
 
   /* Modo cinema: beats entram conforme o progresso local da cena. */
-  :global(html.is-cinema) .beat { opacity: 0; transform: translate3d(0, 18px, 0); transition: opacity .7s var(--ease-out), transform .9s var(--ease-out); }
-  :global(html.is-cinema) .beat.is-on { opacity: 1; transform: none; }
+  :global(html.is-cinema) .beat { opacity: 0; visibility: hidden; transform: translate3d(0, 18px, 0); transition: opacity .7s var(--ease-out), transform .9s var(--ease-out), visibility 0s linear .7s; }
+  :global(html.is-cinema) .beat.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
   :global(html.is-cinema) .beat--step { grid-area: 2 / 1; }
   :global(html.is-cinema) .beat--list li { opacity: 0; transform: translateX(-8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out); transition-delay: calc(var(--i) * 140ms + 200ms); }
   :global(html.is-cinema) .beat--list.is-on li { opacity: 1; transform: none; }

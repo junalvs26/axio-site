@@ -3,12 +3,13 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 interface Props { title: string; description: string }
 const { title, description } = Astro.props;
+const FONTS = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@300;400;500;600&display=swap';
 ---
 <!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <script is:inline>if(!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.classList.add("is-cinema")</script>
+    <script is:inline>(function(h){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;h.classList.add("is-cinema");setTimeout(function(){if(!h.dataset.booted)h.classList.remove("is-cinema")},4000)})(document.documentElement)</script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -18,7 +19,9 @@ const { title, description } = Astro.props;
     <meta property="og:description" content={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@300;400;500;600&display=swap" />
+    <!-- Fontes sem bloquear a primeira pintura: o texto aparece com fallback e troca quando a fonte chega. -->
+    <link rel="stylesheet" href={FONTS} media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href={FONTS} /></noscript>
   </head>
   <body>
     <slot />

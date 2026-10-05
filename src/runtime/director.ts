@@ -16,20 +16,27 @@ interface Track {
 type Events = { scene: (id: SceneId) => void; progress: (p: number, local: number) => void };
 
 const IMPACT_AT = 0.55;
+const RELEASE_MS = 500;
 
 export class SceneDirector {
   private tracks: Track[] = [];
   private stage: HTMLElement;
   private videos: HTMLVideoElement[];
   private activeSlot = -1;
+  /** Incrementa a cada troca de vídeo; respostas de cargas antigas são descartadas. */
+  private loadToken = 0;
   private prefetcher = document.createElement('video');
   private broken = new Set<string>();
   private current = -1;
   private lastLocal = 0;
+  private lastY = NaN;
+  private lastVh = NaN;
+  private dirty = true;
+  private written = new Map<string, string>();
   private handlers: { [K in keyof Events]: Events[K][] } = { scene: [], progress: [] };
-  private onResize = debounce(() => { this.measure(); this.loadVideo(true); }, 200);
+  private onResize = debounce(() => { this.measure(); this.loadVideo(); this.dirty = true; }, 200);
 
-  constructor(private root: HTMLElement, list: Scene[], private scrollTo: (y: number) => void) {
+  constructor(root: HTMLElement, list: Scene[], private scrollTo: (y: number) => void) {
     this.stage = document.querySelector<HTMLElement>('.stage')!;
     this.videos = [...this.stage.querySelectorAll<HTMLVideoElement>('.stage__video')];
     this.prefetcher.muted = true;
@@ -56,18 +63,26 @@ export class SceneDirector {
   destroy(): void {
     removeEventListener('resize', this.onResize);
     removeEventListener('orientationchange', this.onResize);
-    for (const v of this.videos) v.removeAttribute('src');
+    this.videos.forEach(release);
   }
 
   goTo(id: SceneId): void {
     const t = this.tracks.find((t) => t.scene.id === id);
-    if (t) this.scrollTo(t.top + 2);
+    if (!t) return;
+    this.scrollTo(t.top + 2);
+    t.el.setAttribute('tabindex', '-1');
+    t.el.focus({ preventScroll: true });
   }
 
-  /** Chamado a cada quadro pelo loop de scroll. */
+  /** Chamado a cada quadro pelo loop de scroll; não faz nada se scroll e viewport não mudaram. */
   tick(): void {
     const y = scrollY;
     const vh = innerHeight;
+    if (!this.dirty && y === this.lastY && vh === this.lastVh) return;
+    this.dirty = false;
+    this.lastY = y;
+    this.lastVh = vh;
+
     let i = 0;
     for (let k = 0; k < this.tracks.length; k++) if (this.tracks[k].top <= y + 1) i = k;
     const t = this.tracks[i];
@@ -78,7 +93,7 @@ export class SceneDirector {
       this.lastLocal = local;
       // Cenas fora de quadro assumem estado coerente: anteriores completas, posteriores zeradas.
       this.tracks.forEach((other, k) => k !== i && this.applyBeats(other, k < i ? 1 : 0));
-      this.loadVideo(false);
+      this.loadVideo();
       this.prefetchNext();
       this.handlers.scene.forEach((cb) => cb(t.scene.id));
     }
@@ -103,34 +118,47 @@ export class SceneDirector {
     }
   }
 
+  /** Fonte preferida para a orientação; se quebrada, tenta o outro formato. */
   private sourceFor(scene: Scene): string | undefined {
-    const src = pickSource(scene, { w: innerWidth, h: innerHeight });
-    return src && !this.broken.has(src) ? src : undefined;
+    const first = pickSource(scene, { w: innerWidth, h: innerHeight });
+    const other = first === scene.media.desktop ? scene.media.mobile : scene.media.desktop;
+    return [first, other].find((s) => s && !this.broken.has(s));
   }
 
   private hasVideo(): boolean {
     return this.activeSlot >= 0 && this.videos[this.activeSlot].classList.contains('is-active');
   }
 
-  private loadVideo(force: boolean): void {
+  private loadVideo(): void {
+    if (this.current < 0) return;
     const src = this.sourceFor(this.tracks[this.current].scene);
-    const active = this.videos[this.activeSlot];
+    const prev = this.activeSlot >= 0 ? this.videos[this.activeSlot] : undefined;
+    if (src && prev?.getAttribute('src') === src) return;
+
+    const token = ++this.loadToken;
+    // O vídeo da cena anterior sai imediatamente; nunca fica congelado atrás da cena nova.
+    this.videos.forEach((v) => v.classList.remove('is-active'));
+    if (prev) setTimeout(() => { if (this.videos[this.activeSlot] !== prev) release(prev); }, RELEASE_MS);
+    this.dirty = true;
+
     if (!src) {
-      this.videos.forEach((v) => v.classList.remove('is-active'));
       this.activeSlot = -1;
       return;
     }
-    if (!force && active?.getAttribute('src') === src) return;
     const slot = this.activeSlot === 0 ? 1 : 0;
     const next = this.videos[slot];
+    this.activeSlot = slot;
     next.preload = 'auto';
     next.src = src;
-    next.addEventListener('loadeddata', () => {
-      if (next.getAttribute('src') !== src) return;
+    // iOS só decodifica quadros de vídeo que já tocou; muted + playsinline permite.
+    next.play().then(() => next.pause()).catch(() => {});
+    const ready = () => {
+      if (token !== this.loadToken) return;
       next.classList.add('is-active');
-      this.videos.forEach((v, k) => k !== slot && v.classList.remove('is-active'));
-    }, { once: true });
-    this.activeSlot = slot;
+      this.dirty = true;
+    };
+    next.addEventListener('loadeddata', ready, { once: true });
+    next.addEventListener('canplay', ready, { once: true });
   }
 
   private prefetchNext(): void {
@@ -141,30 +169,43 @@ export class SceneDirector {
 
   private markBroken(v: HTMLVideoElement): void {
     const src = v.getAttribute('src');
-    if (src) this.broken.add(src);
+    if (!src) return;
+    this.broken.add(src);
     v.classList.remove('is-active');
-    v.removeAttribute('src');
+    if (this.videos[this.activeSlot] === v) {
+      release(v);
+      this.activeSlot = -1;
+      this.loadVideo();
+    }
   }
 
   private scrub(local: number): void {
     if (!this.hasVideo()) return;
     const v = this.videos[this.activeSlot];
-    if (!v.duration || v.seeking) return;
+    if (!v.duration || v.seeking) {
+      this.dirty = true; // tenta de novo no próximo quadro
+      return;
+    }
     const target = local * (v.duration - 0.05);
     if (Math.abs(v.currentTime - target) > 1 / 30) v.currentTime = target;
   }
 
+  private set(name: string, value: string): void {
+    if (this.written.get(name) === value) return;
+    this.written.set(name, value);
+    this.stage.style.setProperty(name, value);
+  }
+
   private applyCues(c: Cues, video: boolean): void {
-    const s = this.stage.style;
-    s.setProperty('--visor', String(video ? 0 : c.visor));
-    s.setProperty('--ignite', c.ignite.toFixed(3));
-    s.setProperty('--sensor', String(c.sensor));
-    s.setProperty('--visor-scale', c.visorScale.toFixed(3));
-    s.setProperty('--warm', c.warm.toFixed(3));
-    s.setProperty('--glow', c.glow.toFixed(3));
-    s.setProperty('--zoom', c.zoom.toFixed(3));
-    this.stage.dataset.rain = c.rain.toFixed(2);
-    s.setProperty('--rain', c.rain.toFixed(2));
+    this.set('--visor', String(video ? 0 : c.visor));
+    this.set('--ignite', c.ignite.toFixed(3));
+    this.set('--sensor', String(c.sensor));
+    this.set('--visor-scale', c.visorScale.toFixed(3));
+    this.set('--warm', c.warm.toFixed(3));
+    this.set('--glow', c.glow.toFixed(3));
+    this.set('--zoom', c.zoom.toFixed(3));
+    const rain = c.rain.toFixed(2);
+    if (this.stage.dataset.rain !== rain) this.stage.dataset.rain = rain;
   }
 
   private applyBeats(t: Track, local: number): void {
@@ -183,6 +224,12 @@ export class SceneDirector {
     this.stage.classList.add('is-shaking');
     this.stage.dispatchEvent(new CustomEvent('impact'));
   }
+}
+
+function release(v: HTMLVideoElement): void {
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
 }
 
 function clamp(n: number): number {

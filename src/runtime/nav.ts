@@ -20,5 +20,9 @@ export function bindNav(director: SceneDirector): void {
       else a.removeAttribute('aria-current');
     }
   });
-  director.on('progress', (p) => nav.style.setProperty('--p', p.toFixed(4)));
+  let last = '';
+  director.on('progress', (p) => {
+    const v = p.toFixed(4);
+    if (v !== last) nav.style.setProperty('--p', (last = v));
+  });
 }

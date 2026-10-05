@@ -108,3 +108,74 @@ test('salto instantâneo não deixa cena intermediária presa no meio', async ({
   await scrollToScene(page, 'impact', 0.2); // volta direto ao início
   await expect(page.locator('[data-scene="final"] .beat.is-on')).toHaveCount(0);
 });
+
+test.describe('revisão final', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('troca rápida entre cenas nunca deixa vídeo de outra cena ativo', async ({ page }) => {
+    await page.goto('/');
+    await scrollToScene(page, 'city', 0.2);
+    await expect(page.locator('.stage__video.is-active')).toHaveCount(1, { timeout: 5000 });
+    for (let k = 0; k < 3; k++) {
+      await page.evaluate(() => { const el = document.querySelector<HTMLElement>('[data-scene="city"]')!; scrollTo(0, el.offsetTop + 50); });
+      await page.waitForTimeout(30);
+      await page.evaluate(() => { const el = document.querySelector<HTMLElement>('[data-scene="analysis"]')!; scrollTo(0, el.offsetTop + 50); });
+      await page.waitForTimeout(30);
+    }
+    // logo após a troca nenhum vídeo da cena anterior pode continuar visível
+    const stale = await page.locator('.stage__video.is-active').evaluateAll((vs) => vs.filter((v) => !v.getAttribute('src')?.includes('analysis')).length);
+    expect(stale).toBe(0);
+    await page.waitForTimeout(1500);
+    const srcs = await page.locator('.stage__video.is-active').evaluateAll((vs) => vs.map((v) => v.getAttribute('src')));
+    expect(srcs).toEqual(['/scenes/analysis/desktop.mp4']);
+    await scrollToScene(page, 'action', 0.2);
+    await expect(page.locator('.stage__video.is-active')).toHaveCount(0);
+  });
+
+  test('se o JS falhar, o conteúdo continua visível', async ({ page }) => {
+    await page.route('**/_astro/*.js', (r) => r.abort());
+    await page.goto('/');
+    await page.waitForTimeout(5000);
+    const beat = page.locator('.beat', { hasText: 'Toda empresa produz mais informação' });
+    await expect(beat).toHaveCSS('opacity', '1');
+  });
+
+  test('resize sem mudar orientação não recarrega o vídeo', async ({ page }) => {
+    await page.goto('/');
+    await scrollToScene(page, 'city', 0.3);
+    const v = page.locator('.stage__video.is-active');
+    await expect(v).toHaveCount(1, { timeout: 5000 });
+    const slot = await v.getAttribute('data-slot');
+    await page.setViewportSize({ width: 1440, height: 820 });
+    await page.waitForTimeout(800);
+    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('data-slot', slot!);
+  });
+
+  test('parado, o palco não reescreve estilos a cada quadro', async ({ page }) => {
+    await page.goto('/');
+    await scrollToScene(page, 'analysis', 0.5);
+    await page.waitForTimeout(1500);
+    const writes = await page.evaluate(() => new Promise<number>((res) => {
+      let n = 0;
+      const mo = new MutationObserver((m) => (n += m.length));
+      mo.observe(document.querySelector('.stage')!, { attributes: true, attributeFilter: ['style', 'data-rain'] });
+      mo.observe(document.querySelector('.nav')!, { attributes: true, attributeFilter: ['style'] });
+      setTimeout(() => { mo.disconnect(); res(n); }, 1000);
+    }));
+    expect(writes).toBe(0);
+  });
+
+  test('vídeo mobile quebrado cai para o desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('**/scenes/city/mobile.mp4', (r) => r.fulfill({ status: 404, body: '' }));
+    await page.goto('/');
+    await scrollToScene(page, 'city', 0.3);
+    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', '/scenes/city/desktop.mp4', { timeout: 6000 });
+  });
+
+  test('beats invisíveis não recebem foco', async ({ page }) => {
+    await page.goto('/');
+    await scrollToScene(page, 'impact', 0.3);
+    await expect(page.locator('.cta-final')).toHaveCSS('visibility', 'hidden');
+  });
+});

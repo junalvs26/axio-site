@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
-const root = 'dist-e2e';
+const root = process.env.ROOT ?? 'dist-e2e';
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.mp4': 'video/mp4', '.json': 'application/json', '.avif': 'image/avif' };
 
 createServer(async (req, res) => {
@@ -17,4 +17,4 @@ createServer(async (req, res) => {
     res.end(body.subarray(start, end + 1)); return;
   }
   res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': body.length }).end(body);
-}).listen(4322);
+}).listen(Number(process.env.PORT ?? 4322));

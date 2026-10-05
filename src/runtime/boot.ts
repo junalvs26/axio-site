@@ -32,6 +32,7 @@ export function boot(): void {
   }
 
   director.start();
+  html.dataset.booted = '1';
   const target = location.hash.slice(1) as SceneId;
   if (target) requestAnimationFrame(() => director.goTo(target));
 
