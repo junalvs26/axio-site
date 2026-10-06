@@ -1,5 +1,5 @@
 export type SceneId =
-  | 'impact' | 'awakening' | 'city' | 'analysis' | 'action'
+  | 'prelude' | 'impact' | 'awakening' | 'city' | 'analysis' | 'action'
   | 'solution' | 'transformation' | 'proof' | 'final';
 
 export interface SceneMedia { desktop?: string; mobile?: string; poster?: string }
@@ -10,4 +10,6 @@ export interface Scene {
   range: [number, number];
   enabled: boolean;
   media: SceneMedia;
+  /** Trecho [início, fim] em segundos quando a cena vive dentro do vídeo contínuo da história. */
+  slice?: [number, number];
 }

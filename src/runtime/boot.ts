@@ -8,6 +8,7 @@ import { bindNav } from './nav';
 import { startParticles } from './particles';
 import { startCursor } from './cursor';
 import { bindSound } from './sound';
+import { bindVelocity } from './velocity';
 
 export function boot(): void {
   const level = tier(readEnv());
@@ -36,9 +37,11 @@ export function boot(): void {
   const target = location.hash.slice(1) as SceneId;
   if (target) requestAnimationFrame(() => director.goTo(target));
 
+  const velocity = bindVelocity(() => lenis.velocity);
   const loop = (t: number) => {
     lenis.raf(t);
     director.tick();
+    velocity();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);

@@ -1,11 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const order = ['impact', 'awakening', 'city', 'analysis', 'action', 'solution', 'transformation', 'final'];
+const order = ['prelude', 'impact', 'awakening', 'city', 'analysis', 'action', 'solution', 'transformation', 'final'];
 
 async function scrollToScene(page: Page, id: string, local: number) {
   await page.evaluate(([id, local]) => {
     const el = document.querySelector<HTMLElement>(`[data-scene="${id}"]`)!;
     const top = el.getBoundingClientRect().top + scrollY;
+    // Progresso dos textos/luz: o trecho em que o quadro da cena fica fixo (altura − tela).
     window.scrollTo(0, top + (el.offsetHeight - innerHeight) * Number(local));
   }, [id, local] as const);
   await page.waitForTimeout(400);
@@ -127,7 +128,8 @@ test.describe('revisão final', () => {
     expect(stale).toBe(0);
     await page.waitForTimeout(1500);
     const srcs = await page.locator('.stage__video.is-active').evaluateAll((vs) => vs.map((v) => v.getAttribute('src')));
-    expect(srcs).toEqual(['/scenes/analysis/desktop.mp4']);
+    expect(srcs).toHaveLength(1);
+    expect(srcs[0]).toMatch(/^\/scenes\/analysis\/desktop\.mp4\?v=/);
     await scrollToScene(page, 'action', 0.2);
     await expect(page.locator('.stage__video.is-active')).toHaveCount(0);
   });
@@ -167,10 +169,10 @@ test.describe('revisão final', () => {
 
   test('vídeo mobile quebrado cai para o desktop', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.route('**/scenes/city/mobile.mp4', (r) => r.fulfill({ status: 404, body: '' }));
+    await page.route('**/scenes/city/mobile.mp4*', (r) => r.fulfill({ status: 404, body: '' }));
     await page.goto('/');
     await scrollToScene(page, 'city', 0.3);
-    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', '/scenes/city/desktop.mp4', { timeout: 6000 });
+    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', /^\/scenes\/city\/desktop\.mp4\?v=/, { timeout: 6000 });
   });
 
   test('beats invisíveis não recebem foco', async ({ page }) => {

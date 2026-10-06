@@ -37,7 +37,8 @@ const heightVh = Math.round((scene.range[1] - scene.range[0]) * STORY_VH);
   .scene__poster { display: none; }
 
   /* Composições por cena: o texto nunca fica no mesmo lugar duas vezes. */
-  [data-layout='impact'] { align-content: end; justify-items: center; text-align: center; }
+  [data-layout='prelude'] { align-content: end; justify-items: center; text-align: center; padding-bottom: 8vh; }
+ { align-content: end; justify-items: center; text-align: center; }
   [data-layout='awakening'] { align-content: center; justify-items: center; text-align: center; padding-top: 22vh; }
   [data-layout='city'] { align-content: end; max-width: 1440px; }
   [data-layout='city'] > :global(*) { max-width: 26ch; }
@@ -47,6 +48,20 @@ const heightVh = Math.round((scene.range[1] - scene.range[0]) * STORY_VH);
   [data-layout='solution'] { align-content: center; }
   [data-layout='transformation'] { align-content: start; justify-items: end; text-align: right; padding-top: 8vh; }
   [data-layout='final'] { align-content: center; justify-items: center; text-align: center; padding-top: 38vh; }
+
+  /* Textos reagem à velocidade do scroll: inclinam, deslizam contra o movimento, desfocam de
+     leve e abrem o espaçamento; ao parar, voltam suavemente (--vel/--speed vêm de velocity.ts). */
+  :global(html.is-cinema) .scene__beats {
+    transform: translate3d(0, calc(var(--vel, 0) * -16px), 0) skewY(calc(var(--vel, 0) * -2.2deg));
+    filter: blur(calc(var(--speed, 0) * 1.4px));
+    transition: transform .25s linear, filter .25s linear;
+    will-change: transform;
+  }
+  :global(html.is-cinema) .scene__beats :global(.title),
+  :global(html.is-cinema) .scene__beats :global(.step__title) {
+    letter-spacing: calc(-.03em + var(--speed, 0) * .07em);
+    transition: letter-spacing .25s linear;
+  }
 
   /* Modo cinema: a seção ganha altura de scroll e o quadro fica fixo enquanto a cena roda. */
   :global(html.is-cinema) .scene { height: var(--scene-h); }

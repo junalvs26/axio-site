@@ -21,3 +21,12 @@ export function locate(progress: number, list: Scene[]): { scene: Scene; local: 
   const [a, b] = scene.range;
   return { scene, local: b > a ? clamp01((p - a) / (b - a)) : 1 };
 }
+
+/**
+ * Progresso local (0–1) de uma seção de cena pela posição de scroll. Cenas do meio usam a
+ * altura inteira, para o vídeo contínuo não congelar na última tela antes da próxima cena;
+ * só a última desconta a tela, porque a página termina ali.
+ */
+export function trackLocal(y: number, top: number, height: number, vh: number, isLast: boolean): number {
+  return clamp01((y - top) / Math.max(1, isLast ? height - vh : height));
+}

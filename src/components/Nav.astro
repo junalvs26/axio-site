@@ -1,4 +1,5 @@
 ---
+import { asset } from '../lib/asset';
 import type { Scene } from '../scenes/types';
 import { chapters, cta } from '../content/site';
 interface Props { scenes: Scene[] }
@@ -7,8 +8,8 @@ import { existsSync } from 'node:fs';
 const hasSound = existsSync('public/sound/ambience.mp3');
 ---
 <header class="nav">
-  <a class="nav__brand" href="#impact" aria-label="Axio — voltar ao início">
-    <img src="/brand/logo-negativo.png" alt="" width="1966" height="238" />
+  <a class="nav__brand" href="#prelude" aria-label="Axio — voltar ao início">
+    <img src={asset('/brand/logo-negativo.png')} alt="" width="1966" height="238" />
   </a>
   <nav class="nav__chapters" aria-label="Capítulos">
     <ol>
@@ -22,7 +23,7 @@ const hasSound = existsSync('public/sound/ambience.mp3');
       ))}
     </ol>
   </nav>
-  {hasSound && <button class="nav__sound" type="button" data-sound data-src="/sound/ambience.mp3" aria-pressed="false">Som</button>}
+  {hasSound && <button class="nav__sound" type="button" data-sound data-src={asset('/sound/ambience.mp3')} aria-pressed="false">Som</button>}
   <a class="nav__cta" href={cta.href} data-cta>{cta.label}</a>
   <div class="nav__progress" aria-hidden="true"><span></span></div>
 </header>

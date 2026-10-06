@@ -1,4 +1,5 @@
 ---
+import { asset } from '../lib/asset';
 import Base from '../layouts/Base.astro';
 import Stage from '../components/Stage.astro';
 import Nav from '../components/Nav.astro';
@@ -17,7 +18,7 @@ const list = normalizeRanges(scenes);
     {list.map((s) => <Scene scene={s} />)}
   </main>
   <footer class="foot">
-    <img src="/brand/logo-negativo.png" alt="Axio" width="1966" height="238" loading="lazy" />
+    <img src={asset('/brand/logo-negativo.png')} alt="Axio" width="1966" height="238" loading="lazy" />
     <p>© {new Date().getFullYear()} Axio</p>
   </footer>
   <script>

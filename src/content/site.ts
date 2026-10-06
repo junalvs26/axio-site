@@ -10,6 +10,8 @@ export interface Beat {
   items?: BeatItem[];
   /** Momento (progresso local 0–1 da cena) em que o beat entra. */
   at: number;
+  /** Momento em que o beat sai (opcional): para frases que se substituem. */
+  until?: number;
 }
 
 export const slogan = 'Chega quando a operação mais precisa.';
@@ -26,8 +28,9 @@ export const cta = { label: 'Ativar a Axio', href: '#final' };
 
 /** Rótulos curtos do índice de capítulos. */
 export const chapters: Partial<Record<SceneId, string>> = {
+  prelude: 'Sinal',
   impact: 'Chegada',
-  awakening: 'Sinal',
+  awakening: 'Olhar',
   city: 'Cidade',
   analysis: 'Varredura',
   action: 'Ação',
@@ -37,9 +40,11 @@ export const chapters: Partial<Record<SceneId, string>> = {
 };
 
 export const beats: Partial<Record<SceneId, Beat[]>> = {
+  prelude: [
+    { kind: 'line', text: 'Role para descer.', at: 0, until: 0.3 },
+  ],
   impact: [
     { kind: 'kicker', text: 'Sinal detectado', at: 0.15 },
-    { kind: 'line', text: 'Role para acompanhar a chegada.', at: 0 },
   ],
   awakening: [
     { kind: 'title', text: 'Axio', at: 0.45 },

@@ -3,6 +3,7 @@ import { pickSource } from './media';
 import { cues, type Cues } from './cues';
 import { visibleBeats } from './beats';
 import { playDecode } from './decode-dom';
+import { trackLocal } from '../scenes/timeline';
 
 interface Track {
   scene: Scene;
@@ -10,7 +11,7 @@ interface Track {
   top: number;
   height: number;
   beats: HTMLElement[];
-  timings: { at: number; kind: string }[];
+  timings: { at: number; kind: string; until?: number }[];
 }
 
 type Events = { scene: (id: SceneId) => void; progress: (p: number, local: number) => void };
@@ -44,7 +45,7 @@ export class SceneDirector {
     this.tracks = list.map((scene) => {
       const el = root.querySelector<HTMLElement>(`[data-scene="${scene.id}"]`)!;
       const beats = [...el.querySelectorAll<HTMLElement>('.beat')];
-      return { scene, el, top: 0, height: 0, beats, timings: beats.map((b) => ({ at: Number(b.dataset.at), kind: b.dataset.kind ?? '' })) };
+      return { scene, el, top: 0, height: 0, beats, timings: beats.map((b) => ({ at: Number(b.dataset.at), kind: b.dataset.kind ?? '', until: b.dataset.until ? Number(b.dataset.until) : undefined })) };
     });
     for (const v of this.videos) v.addEventListener('error', () => this.markBroken(v));
   }
@@ -86,7 +87,10 @@ export class SceneDirector {
     let i = 0;
     for (let k = 0; k < this.tracks.length; k++) if (this.tracks[k].top <= y + 1) i = k;
     const t = this.tracks[i];
-    const local = clamp((y - t.top) / Math.max(1, t.height - vh));
+    // Dois relógios: o vídeo corre pela seção inteira (sem ponto morto entre cenas); textos e
+    // luz correm só enquanto o quadro da cena está fixo na tela, para não saírem rolando junto.
+    const videoLocal = trackLocal(y, t.top, t.height, vh, i === this.tracks.length - 1);
+    const local = trackLocal(y, t.top, t.height, vh, true);
 
     if (i !== this.current) {
       this.current = i;
@@ -103,7 +107,7 @@ export class SceneDirector {
 
     this.applyCues(cues(t.scene.id, local), this.hasVideo());
     this.applyBeats(t, local);
-    this.scrub(local);
+    this.scrub(videoLocal);
 
     const last = this.tracks[this.tracks.length - 1];
     const p = clamp(y / Math.max(1, last.top + last.height - vh));
@@ -186,7 +190,9 @@ export class SceneDirector {
       this.dirty = true; // tenta de novo no próximo quadro
       return;
     }
-    const target = local * (v.duration - 0.05);
+    const slice = this.tracks[this.current].scene.slice;
+    const [a, b] = slice ?? [0, v.duration - 0.05];
+    const target = Math.min(a + local * (b - a), v.duration - 0.05);
     if (Math.abs(v.currentTime - target) > 1 / 30) v.currentTime = target;
   }
 

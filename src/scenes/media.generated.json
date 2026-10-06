@@ -1,1 +1,34 @@
-{}
+{
+  "action": {
+    "poster": "/scenes/action/poster.avif?v=6e2a61b9bf"
+  },
+  "analysis": {
+    "poster": "/scenes/analysis/poster.avif?v=b227d80d53"
+  },
+  "awakening": {
+    "poster": "/scenes/awakening/poster.avif?v=30d6a9e51c"
+  },
+  "city": {
+    "poster": "/scenes/city/poster.avif?v=ccaafa2196"
+  },
+  "final": {
+    "poster": "/scenes/final/poster.avif?v=c801c1573f"
+  },
+  "impact": {
+    "poster": "/scenes/impact/poster.avif?v=aa2d50fa8f"
+  },
+  "prelude": {
+    "poster": "/scenes/prelude/poster.avif?v=d1b441c0ba"
+  },
+  "solution": {
+    "poster": "/scenes/solution/poster.avif?v=fe699cd814"
+  },
+  "story": {
+    "desktop": "/scenes/story/desktop.mp4?v=cfa48f527b",
+    "mobile": "/scenes/story/mobile.mp4?v=7075127422",
+    "poster": "/scenes/story/poster.avif?v=1cef1f87f2"
+  },
+  "transformation": {
+    "poster": "/scenes/transformation/poster.avif?v=158e0dd099"
+  }
+}

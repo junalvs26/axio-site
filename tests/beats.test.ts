@@ -9,6 +9,11 @@ describe('visibleBeats', () => {
     const b = [{ at: 0, kind: 'kicker' }, { at: 0.1, kind: 'step' }, { at: 0.4, kind: 'step' }, { at: 0.7, kind: 'step' }];
     expect(visibleBeats(b, 0.5)).toEqual([true, false, true, false]);
   });
+  it('beat com "until" sai quando o seguinte entra', () => {
+    const b = [{ at: 0, kind: 'line', until: 0.3 }, { at: 0.3, kind: 'title' }];
+    expect(visibleBeats(b, 0.1)).toEqual([true, false]);
+    expect(visibleBeats(b, 0.35)).toEqual([false, true]);
+  });
   it('voltar o scroll esconde de novo', () => {
     expect(visibleBeats([{ at: 0.5, kind: 'line' }], 0.2)).toEqual([false]);
   });
