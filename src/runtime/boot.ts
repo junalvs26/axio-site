@@ -8,7 +8,6 @@ import { bindNav } from './nav';
 import { startParticles } from './particles';
 import { startCursor } from './cursor';
 import { bindSound } from './sound';
-import { bindVelocity } from './velocity';
 
 export function boot(): void {
   const level = tier(readEnv());
@@ -23,12 +22,12 @@ export function boot(): void {
 
   const lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
   const root = document.getElementById('story')!;
-  const director = new SceneDirector(root, normalizeRanges(scenes), (y) => lenis.scrollTo(y, { duration: 1.4 }));
+  const director = new SceneDirector(root, normalizeRanges(scenes), (y) => lenis.scrollTo(y, { duration: 1.4 }), level === 'full');
   bindNav(director);
 
   const stage = document.querySelector<HTMLElement>('.stage')!;
   if (level === 'full') {
-    startParticles(stage.querySelector('canvas')!, stage);
+    startParticles(stage.querySelector<HTMLCanvasElement>('.stage__particles')!, stage);
     startCursor(stage);
   }
 
@@ -37,11 +36,9 @@ export function boot(): void {
   const target = location.hash.slice(1) as SceneId;
   if (target) requestAnimationFrame(() => director.goTo(target));
 
-  const velocity = bindVelocity(() => lenis.velocity);
   const loop = (t: number) => {
     lenis.raf(t);
     director.tick();
-    velocity();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);

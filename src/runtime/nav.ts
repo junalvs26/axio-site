@@ -1,10 +1,8 @@
 import type { SceneDirector } from './director';
 import type { SceneId } from '../scenes/types';
 
-/** Índice de capítulos e CTAs navegam pela história; capítulo ativo marcado. */
+/** Links internos (marca no topo, CTA final, pular para o contato) navegam pela história com rolagem suave. */
 export function bindNav(director: SceneDirector): void {
-  const nav = document.querySelector<HTMLElement>('.nav')!;
-  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-chapter]')];
   document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((a) => {
     const id = a.getAttribute('href')!.slice(1) as SceneId;
     if (!document.querySelector(`[data-scene="${id}"]`)) return;
@@ -13,16 +11,5 @@ export function bindNav(director: SceneDirector): void {
       director.goTo(id);
       history.replaceState(null, '', `#${id}`);
     });
-  });
-  director.on('scene', (id) => {
-    for (const a of links) {
-      if (a.dataset.chapter === id) a.setAttribute('aria-current', 'step');
-      else a.removeAttribute('aria-current');
-    }
-  });
-  let last = '';
-  director.on('progress', (p) => {
-    const v = p.toFixed(4);
-    if (v !== last) nav.style.setProperty('--p', (last = v));
   });
 }

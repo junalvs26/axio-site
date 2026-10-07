@@ -10,22 +10,26 @@ const isHero = sceneId === 'awakening' && beat.kind === 'title';
 // O primeiro texto da primeira cena já nasce visível: é o que aparece antes do JS (e o LCP).
 const initiallyOn = sceneId === 'prelude' && beat.at === 0;
 const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0') : '';
+// Títulos e linhas entram palavra por palavra (ver .w no CSS); o texto continua inteiro no HTML.
+const words = (text = '') => text.split(' ');
+const n = beat.kind === 'list' ? beat.items!.length : words(beat.text).length;
 ---
-<div class={`beat beat--${beat.kind}${initiallyOn ? ' is-on' : ''}`} data-at={beat.at} data-until={beat.until} data-kind={beat.kind}>
-  {beat.kind === 'kicker' && <p class="kicker"><span class="kicker__tick" aria-hidden="true"></span><span data-decode>{beat.text}</span></p>}
+<div class={`beat beat--${beat.kind}${initiallyOn ? ' is-on' : ''}`} style={`--n:${n}${initiallyOn ? ';--in:1' : ''}`} data-at={beat.at} data-until={beat.until} data-kind={beat.kind}>
+  {beat.kind === 'kicker' && <p class="kicker"><span class="kicker__tick" aria-hidden="true"></span>{beat.text}</p>}
 
   {beat.kind === 'title' && isHero && (
     <h1 class="hero-mark">
       <img src={asset('/brand/logo-negativo.png')} alt="Axio" width="1966" height="238" fetchpriority="high" />
     </h1>
   )}
-  {beat.kind === 'title' && !isHero && <h2 class="title">{beat.text}</h2>}
+  {beat.kind === 'title' && !isHero && <h2 class="title">{words(beat.text).map((w, k) => <><span class="w" style={`--k:${k}`}>{w}</span>{' '}</>)}</h2>}
+  {initiallyOn && <span class="scroll-cue" aria-hidden="true"><span></span></span>}
 
-  {beat.kind === 'line' && <p class="line">{beat.text}</p>}
+  {beat.kind === 'line' && <p class="line">{words(beat.text).map((w, k) => <><span class="w" style={`--k:${k}`}>{w}</span>{' '}</>)}</p>}
 
   {beat.kind === 'list' && (
     <div class="readout">
-      <p class="readout__label" data-decode>{beat.text}</p>
+      <p class="readout__label">{beat.text}</p>
       <ol class="readout__list">
         {beat.items!.map((it, i) => (
           <li style={`--i:${i}`}>
@@ -39,8 +43,8 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
   )}
 
   {beat.kind === 'step' && (
-    <article class="step">
-      <p class="step__no" aria-hidden="true">Passo {stepNo}</p>
+    <article class={`step${stepNo === '02' ? ' step--lift' : ''}`}>
+      <p class="step__no">Passo {stepNo}</p>
       <h3 class="step__title">{beat.title}</h3>
       <p class="step__text">{beat.text}</p>
     </article>
@@ -67,16 +71,34 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
   .hero-mark img {
     width: min(68vw, 560px); height: auto;
     /* logo original preservado; só a parte navy precisa de leitura no escuro → filtro aplicado ao conjunto não recolore o laranja */
-    filter: drop-shadow(0 0 40px rgba(255, 107, 35, .12));
+    filter: drop-shadow(0 0 40px rgb(var(--c-orange-rgb) / .12));
   }
 
   .title {
     margin: 0; font: 400 clamp(2rem, 4.6vw, 4.5rem)/1.04 var(--f-display);
     letter-spacing: -.02em; text-wrap: balance; max-width: 18ch;
   }
+  /* Abertura: a chamada é a primeira coisa na tela; o fio com a luz descendo diz "role". */
+  /* Cai sobre o céu de tempestade (raios e nuvens claras): peso maior e sombra escura difusa para ler em qualquer quadro. */
+  :global([data-layout='prelude']) .title {
+    font-size: clamp(2.4rem, 6vw, 5.5rem); font-weight: 500; max-width: 14ch; text-align: center;
+    text-shadow: 0 2px 4px rgb(var(--c-ink-rgb) / .6), 0 0 40px rgb(var(--c-ink-rgb) / .75);
+  }
+  .scroll-cue { display: block; width: 2px; height: 72px; margin: 1.75rem auto 0; border-radius: 2px; background: rgb(232 237 245 / .35); overflow: hidden; }
+  .scroll-cue span { display: block; width: 100%; height: 40%; background: var(--c-orange); animation: cue 1.8s var(--ease-out) infinite; }
+  @keyframes cue { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
+  @media (prefers-reduced-motion: reduce) { .scroll-cue span { animation: none; transform: translateY(75%); } }
   .line { margin: 0; font-size: clamp(1.05rem, 1.35vw, 1.3rem); color: var(--c-dim); max-width: 46ch; text-wrap: pretty; }
 
-  .readout { width: min(100%, 560px); border-top: 1px solid var(--c-line); padding-top: 1rem; }
+  /* A lista cai sobre a varredura luminosa do vídeo: um véu local + sombra de texto garantem leitura. */
+  .readout {
+    position: relative; width: min(100%, 560px); border-top: 1px solid var(--c-line); padding-top: 1rem;
+    text-shadow: 0 1px 2px rgb(var(--c-ink-rgb) / .9), 0 0 18px rgb(var(--c-ink-rgb) / .8);
+  }
+  .readout::before {
+    content: ''; position: absolute; inset: -3rem -4rem; z-index: -1; pointer-events: none;
+    background: radial-gradient(closest-side, rgb(var(--c-ink-rgb) / .88) 40%, transparent);
+  }
   .readout__label { margin: 0 0 1.25rem; font: 500 .75rem/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--c-orange); }
   .readout__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
   .readout__list li { display: grid; grid-template-columns: 2.5rem 1fr; column-gap: .5rem; row-gap: .2rem; }
@@ -85,26 +107,58 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
   .readout__text { color: var(--c-dim); font-size: .98rem; }
 
   .step { max-width: 34rem; display: grid; gap: .6rem; padding-left: 1.25rem; border-left: 1px solid var(--c-orange); }
-  .step__no { margin: 0; font: 500 .75rem/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--c-orange); }
+  .step__no { margin: 0; font: 500 .9rem/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--c-orange); }
   .step__title { margin: 0; font: 400 clamp(2.4rem, 6vw, 5.5rem)/1 var(--f-display); letter-spacing: -.03em; }
-  .step__text { margin: 0; color: var(--c-dim); font-size: clamp(1.05rem, 1.3vw, 1.25rem); max-width: 40ch; }
+  .step__text { margin: 0; color: var(--c-text); font-size: clamp(1.15rem, 1.6vw, 1.5rem); line-height: 1.45; max-width: 38ch; }
+  /* TESTE (aprovação pendente): sombra sutil só no passo 02 (Axio OS), para destacar o texto do vídeo. */
+  .step--lift { text-shadow: 0 1px 2px rgb(var(--c-ink-rgb) / .55), 0 0 24px rgb(var(--c-ink-rgb) / .65); }
 
   .cta-final {
     display: inline-flex; align-items: center; gap: .9rem; padding: 1.1rem 1.6rem 1.1rem 1.3rem;
     font: 500 1rem/1 var(--f-display); letter-spacing: .02em; text-decoration: none; color: var(--c-ink);
     background: var(--c-orange); border-radius: 999px;
-    box-shadow: 0 0 0 0 rgba(255, 107, 35, .5);
+    box-shadow: 0 0 0 0 rgb(var(--c-orange-rgb) / .5);
     transition: box-shadow .5s var(--ease-out), transform .5s var(--ease-out);
   }
-  .cta-final:hover { box-shadow: 0 0 60px 6px rgba(255, 107, 35, .35); transform: translateY(-2px); }
+  .cta-final:hover { box-shadow: 0 0 60px 6px rgb(var(--c-orange-rgb) / .35); transform: translateY(-2px); }
   .cta-final__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-ink); }
   .cta-final__arrow { transition: transform .4s var(--ease-out); }
   .cta-final:hover .cta-final__arrow { transform: translateX(4px); }
 
-  /* Modo cinema: beats entram conforme o progresso local da cena. */
-  :global(html.is-cinema) .beat { opacity: 0; visibility: hidden; transform: translate3d(0, 18px, 0); transition: opacity .7s var(--ease-out), transform .9s var(--ease-out), visibility 0s linear .7s; }
-  :global(html.is-cinema) .beat.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-  :global(html.is-cinema) .beat--step { grid-area: 2 / 1; }
-  :global(html.is-cinema) .beat--list li { opacity: 0; transform: translateX(-8px); transition: opacity .6s var(--ease-out), transform .6s var(--ease-out); transition-delay: calc(var(--i) * 140ms + 200ms); }
-  :global(html.is-cinema) .beat--list.is-on li { opacity: 1; transform: none; }
+  /* Modo cinema: entrada (--in) e saída (--out) vêm da rolagem, 0–1, escritas pelo director a cada
+     quadro. Nada aqui tem transition: o texto anda junto com o scroll e volta pelo mesmo caminho. */
+  :global(html.is-cinema) .beat {
+    --in: 0; --out: 0;
+    visibility: hidden;
+    opacity: calc(var(--in) * (1 - var(--out)));
+    transform: translate3d(0, calc((1 - var(--in)) * 20px - var(--out) * 36px), 0);
+  }
+  :global(html.is-cinema) .beat.is-on { visibility: visible; }
+  /* Passos trocam no mesmo lugar, sob o rótulo: sobem pouco ao sair para não encostar nele. */
+  :global(html.is-cinema) .beat--step { grid-area: 2 / 1; transform: translate3d(0, calc((1 - var(--in)) * 20px - var(--out) * 10px), 0); }
+
+  /* Palavra k de n: cada uma tem sua janela dentro de --in, duas palavras se sobrepondo por vez. */
+  :global(html.is-cinema) .beat--title, :global(html.is-cinema) .beat--line { opacity: calc(1 - var(--out)); }
+  :global(html.is-cinema) .w {
+    --p: clamp(0, calc((var(--in) * (var(--n) + 2) - var(--k)) / 2), 1);
+    display: inline-block; opacity: var(--p);
+    transform: translate3d(0, calc((1 - var(--p)) * .45em), 0);
+  }
+  /* Só os títulos ganham desfoque: poucas palavras grandes, custo limitado. */
+  :global(html.is-cinema) .title .w { filter: blur(calc((1 - var(--p)) * 6px)); }
+
+  /* Logo: revelado da esquerda para a direita, como uma varredura. */
+  :global(html.is-cinema) .hero-mark { clip-path: inset(0 calc((1 - var(--in)) * 100%) 0 0); }
+  :global(html.is-cinema) .beat:has(.hero-mark) { opacity: calc(1 - var(--out)); }
+
+  :global(html.is-cinema) .beat--list li {
+    --p: clamp(0, calc((var(--in) * (var(--n) + 2) - var(--i)) / 2), 1);
+    opacity: var(--p); transform: translate3d(calc((1 - var(--p)) * -12px), 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.is-cinema) .beat, :global(html.is-cinema) .w, :global(html.is-cinema) .beat--list li { transform: none; }
+    :global(html.is-cinema) .title .w { filter: none; }
+    :global(html.is-cinema) .hero-mark { clip-path: none; opacity: var(--in); }
+  }
 </style>

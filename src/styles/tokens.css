@@ -6,14 +6,18 @@
   --c-text: #E8EDF5;
   --c-dim: #9AA8BD;
   --c-orange: #FF6B23;
-  --c-orange-soft: rgba(255, 107, 35, 0.18);
+  --c-orange-rgb: 255 107 35;
+  --c-ink-rgb: 1 10 24;
+  --c-orange-soft: rgb(var(--c-orange-rgb) / .18);
   --c-line: rgba(232, 237, 245, 0.14);
 
-  --f-display: 'Unbounded', system-ui, sans-serif;
-  --f-text: 'Inter Tight', system-ui, sans-serif;
-  --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Uma família só: Saira (técnica, de traço reto como o logo). Rótulos e números usam a mesma face. */
+  --f-display: 'Saira', system-ui, sans-serif;
+  --f-text: 'Saira', system-ui, sans-serif;
+  --f-mono: 'Saira', system-ui, sans-serif;
 
   --gutter: clamp(16px, 4vw, 64px);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --nav-h: 64px;
 }
+

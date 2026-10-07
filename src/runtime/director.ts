@@ -1,8 +1,8 @@
 import type { Scene, SceneId } from '../scenes/types';
-import { pickSource } from './media';
+import { pickIndex, pickSource } from './media';
+import { FramePlayer, playerSupported } from './frames-player';
 import { cues, type Cues } from './cues';
-import { visibleBeats } from './beats';
-import { playDecode } from './decode-dom';
+import { beatPhases } from './beats';
 import { trackLocal } from '../scenes/timeline';
 
 interface Track {
@@ -35,11 +35,27 @@ export class SceneDirector {
   private dirty = true;
   private written = new Map<string, string>();
   private handlers: { [K in keyof Events]: Events[K][] } = { scene: [], progress: [] };
-  private onResize = debounce(() => { this.measure(); this.loadVideo(); this.dirty = true; }, 200);
+  private onResize = debounce(() => { this.measure(); this.loadVideo(); this.player?.size(...viewportPx()); this.dirty = true; }, 200);
 
-  constructor(root: HTMLElement, list: Scene[], private scrollTo: (y: number) => void) {
+  private poster: HTMLImageElement;
+  /** Leitor WebCodecs num worker: desenha quadros decodificados no canvas, sem buscar no <video>. */
+  private canvas: HTMLCanvasElement;
+  private player: FramePlayer | undefined;
+  private playerSrc: string | undefined;
+  /** WebCodecs indisponível ou falhou: daqui em diante o palco usa o <video>. */
+  private framesOff = !playerSupported();
+  private lastFrame = NaN;
+  /** Velocidade suavizada da posição no vídeo, em quadros por segundo de tela. */
+  private frameSpeed = 0;
+
+  /** withVideo=false (tier lite): o palco mostra só o poster de cada cena, sem baixar vídeo. */
+  constructor(root: HTMLElement, list: Scene[], private scrollTo: (y: number) => void, private withVideo = true) {
     this.stage = document.querySelector<HTMLElement>('.stage')!;
     this.videos = [...this.stage.querySelectorAll<HTMLVideoElement>('.stage__video')];
+    this.canvas = this.stage.querySelector<HTMLCanvasElement>('.stage__frames')!;
+    // Criado só aqui: no tier full/static não existe <img> sem src no palco.
+    this.poster = Object.assign(document.createElement('img'), { className: 'stage__poster', alt: '', decoding: 'async' });
+    if (!withVideo) this.stage.querySelector('.stage__particles')!.before(this.poster);
     this.prefetcher.muted = true;
     this.prefetcher.preload = 'auto';
     this.tracks = list.map((scene) => {
@@ -65,6 +81,7 @@ export class SceneDirector {
     removeEventListener('resize', this.onResize);
     removeEventListener('orientationchange', this.onResize);
     this.videos.forEach(release);
+    this.player?.close();
   }
 
   goTo(id: SceneId): void {
@@ -105,7 +122,7 @@ export class SceneDirector {
     if (t.scene.id === 'impact' && this.lastLocal < IMPACT_AT && local >= IMPACT_AT) this.shake();
     this.lastLocal = local;
 
-    this.applyCues(cues(t.scene.id, local), this.hasVideo());
+    this.applyCues(cues(t.scene.id, local), this.hasVideo() || this.poster.classList.contains('is-active'));
     this.applyBeats(t, local);
     this.scrub(videoLocal);
 
@@ -130,21 +147,25 @@ export class SceneDirector {
   }
 
   private hasVideo(): boolean {
+    if (this.canvas.classList.contains('is-active')) return true;
     return this.activeSlot >= 0 && this.videos[this.activeSlot].classList.contains('is-active');
   }
 
   private loadVideo(): void {
     if (this.current < 0) return;
-    const src = this.sourceFor(this.tracks[this.current].scene);
+    if (!this.withVideo) return this.showPoster(this.tracks[this.current].scene);
+    const scene = this.tracks[this.current].scene;
+    const src = this.sourceFor(scene);
+    const index = pickIndex(scene, src);
+    if (!this.framesOff && src && index) return this.openFrames(src, index);
+
     const prev = this.activeSlot >= 0 ? this.videos[this.activeSlot] : undefined;
     if (src && prev?.getAttribute('src') === src) return;
-
     const token = ++this.loadToken;
-    // O vídeo da cena anterior sai imediatamente; nunca fica congelado atrás da cena nova.
+    // O vídeo anterior sai na hora; nunca fica congelado atrás do novo.
     this.videos.forEach((v) => v.classList.remove('is-active'));
     if (prev) setTimeout(() => { if (this.videos[this.activeSlot] !== prev) release(prev); }, RELEASE_MS);
     this.dirty = true;
-
     if (!src) {
       this.activeSlot = -1;
       return;
@@ -165,7 +186,47 @@ export class SceneDirector {
     next.addEventListener('canplay', ready, { once: true });
   }
 
+  /** Abre o leitor de quadros para src (troca só quando a orientação pede o outro formato). */
+  private openFrames(src: string, index: string): void {
+    if (this.playerSrc === src) return;
+    this.playerSrc = src;
+    this.lastFrame = NaN;
+    if (!this.player) {
+      let player: FramePlayer;
+      try {
+        player = new FramePlayer(this.canvas);
+      } catch {
+        return this.dropFrames();
+      }
+      player.onReady = () => { this.dirty = true; };
+      player.onError = () => this.dropFrames();
+      player.onPainted = (frame) => {
+        this.canvas.dataset.frame = String(frame);
+        if (!this.canvas.classList.contains('is-active')) this.canvas.classList.add('is-active');
+      };
+      this.player = player;
+    }
+    this.player.open(src, index, ...viewportPx());
+  }
+
+  private dropFrames(): void {
+    this.framesOff = true;
+    this.player?.close();
+    this.player = undefined;
+    this.playerSrc = undefined;
+    this.canvas.classList.remove('is-active');
+    this.loadVideo();
+  }
+
+  private showPoster(scene: Scene): void {
+    const src = scene.media.poster;
+    if (!src) return this.poster.classList.remove('is-active');
+    if (this.poster.getAttribute('src') !== src) this.poster.src = src;
+    this.poster.classList.add('is-active');
+  }
+
   private prefetchNext(): void {
+    if (!this.withVideo || !this.framesOff) return;
     const next = this.tracks[this.current + 1];
     const src = next && this.sourceFor(next.scene);
     if (src && this.prefetcher.getAttribute('src') !== src) this.prefetcher.src = src;
@@ -184,6 +245,7 @@ export class SceneDirector {
   }
 
   private scrub(local: number): void {
+    if (this.player?.ready) return this.scrubFrames(local, this.player);
     if (!this.hasVideo()) return;
     const v = this.videos[this.activeSlot];
     if (!v.duration || v.seeking) {
@@ -194,6 +256,16 @@ export class SceneDirector {
     const [a, b] = slice ?? [0, v.duration - 0.05];
     const target = Math.min(a + local * (b - a), v.duration - 0.05);
     if (Math.abs(v.currentTime - target) > 1 / 30) v.currentTime = target;
+  }
+
+  private scrubFrames(local: number, player: FramePlayer): void {
+    const last = (player.count - 1) / player.fps;
+    const [a, b] = this.tracks[this.current].scene.slice ?? [0, last];
+    const f = Math.min(last, Math.max(0, a + local * (b - a))) * player.fps;
+    const delta = Number.isNaN(this.lastFrame) ? 0 : f - this.lastFrame;
+    this.lastFrame = f;
+    this.frameSpeed += (Math.abs(delta) * 60 - this.frameSpeed) * 0.2;
+    player.target(f, Math.sign(delta), this.frameSpeed);
   }
 
   private set(name: string, value: string): void {
@@ -214,13 +286,19 @@ export class SceneDirector {
     if (this.stage.dataset.rain !== rain) this.stage.dataset.rain = rain;
   }
 
+  /** Entrada/saída de cada texto presas à rolagem: o CSS lê --in/--out e anda junto com o scroll. */
   private applyBeats(t: Track, local: number): void {
-    const vis = visibleBeats(t.timings, local);
+    const phases = beatPhases(t.timings, local, t === this.tracks[this.tracks.length - 1]);
     t.beats.forEach((el, k) => {
-      const on = vis[k];
-      if (on === el.classList.contains('is-on')) return;
-      el.classList.toggle('is-on', on);
-      if (on) el.querySelectorAll<HTMLElement>('[data-decode]').forEach(playDecode);
+      const enter = easeOut(phases[k].in);
+      const out = easeIn(phases[k].out);
+      const key = `${enter.toFixed(3)} ${out.toFixed(3)}`;
+      if (el.dataset.phase === key) return;
+      el.dataset.phase = key;
+      el.style.setProperty('--in', enter.toFixed(3));
+      el.style.setProperty('--out', out.toFixed(3));
+      const on = enter > 0 && out < 1;
+      if (on !== el.classList.contains('is-on')) el.classList.toggle('is-on', on);
     });
   }
 
@@ -231,6 +309,15 @@ export class SceneDirector {
     this.stage.dispatchEvent(new CustomEvent('impact'));
   }
 }
+
+/** Tamanho do palco em pixels de tela (densidade limitada a 2×): o worker guarda os quadros nesse tamanho. */
+function viewportPx(): [number, number] {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  return [Math.round(innerWidth * dpr), Math.round(innerHeight * dpr)];
+}
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+const easeIn = (t: number) => t ** 2;
 
 function release(v: HTMLVideoElement): void {
   v.pause();

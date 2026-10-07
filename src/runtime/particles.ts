@@ -58,14 +58,17 @@ export function startParticles(canvas: HTMLCanvasElement, stage: HTMLElement): (
     if (running) raf = requestAnimationFrame(frame);
   };
 
+  let resizeId = 0;
+  const onResize = () => { clearTimeout(resizeId); resizeId = window.setTimeout(resize, 150); };
   resize();
-  addEventListener('resize', resize);
+  addEventListener('resize', onResize);
   document.addEventListener('visibilitychange', onVis);
   raf = requestAnimationFrame(frame);
 
   return () => {
     running = false; cancelAnimationFrame(raf);
-    removeEventListener('resize', resize);
+    clearTimeout(resizeId);
+    removeEventListener('resize', onResize);
     document.removeEventListener('visibilitychange', onVis);
     stage.removeEventListener('impact', onImpact);
   };

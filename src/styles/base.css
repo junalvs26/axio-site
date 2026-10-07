@@ -10,3 +10,8 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--c-orange); outline-offset: 3px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 ::selection { background: var(--c-orange); color: var(--c-ink); }
+.skip:focus-visible {
+  position: fixed; z-index: 20; top: .75rem; left: var(--gutter); width: auto; height: auto; clip: auto;
+  padding: .8rem 1.1rem; border-radius: 999px; background: var(--c-orange); color: var(--c-ink);
+  font: 500 .85rem/1 var(--f-display); text-decoration: none; outline-offset: 4px;
+}

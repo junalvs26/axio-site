@@ -1,20 +1,36 @@
 import { describe, it, expect } from 'vitest';
-import { visibleBeats } from '../src/runtime/beats';
+import { beatPhases } from '../src/runtime/beats';
 
-describe('visibleBeats', () => {
-  it('mostra beats cujo "at" já passou', () => {
-    expect(visibleBeats([{ at: 0.1, kind: 'kicker' }, { at: 0.5, kind: 'title' }], 0.3)).toEqual([true, false]);
+describe('beatPhases', () => {
+  const r = (n: number) => Math.round(n * 100) / 100;
+  const phases = (b: Parameters<typeof beatPhases>[0], local: number, last = false) =>
+    beatPhases(b, local, last).map((p) => [r(p.in), r(p.out)]);
+
+  it('entra junto com a rolagem a partir do "at"', () => {
+    const b = [{ at: 0.2, kind: 'title' }];
+    expect(phases(b, 0.1)).toEqual([[0, 0]]);
+    expect(phases(b, 0.27)).toEqual([[0.5, 0]]);
+    expect(phases(b, 0.4)).toEqual([[1, 0]]);
   });
-  it('só o passo mais recente fica visível', () => {
-    const b = [{ at: 0, kind: 'kicker' }, { at: 0.1, kind: 'step' }, { at: 0.4, kind: 'step' }, { at: 0.7, kind: 'step' }];
-    expect(visibleBeats(b, 0.5)).toEqual([true, false, true, false]);
+  it('beat em at=0 já nasce inteiro', () => {
+    expect(phases([{ at: 0, kind: 'line' }], 0)).toEqual([[1, 0]]);
   });
-  it('beat com "until" sai quando o seguinte entra', () => {
-    const b = [{ at: 0, kind: 'line', until: 0.3 }, { at: 0.3, kind: 'title' }];
-    expect(visibleBeats(b, 0.1)).toEqual([true, false]);
-    expect(visibleBeats(b, 0.35)).toEqual([false, true]);
+  it('sai no fim da cena, menos na última', () => {
+    const b = [{ at: 0.1, kind: 'line' }];
+    expect(phases(b, 0.95)).toEqual([[1, 0.5]]);
+    expect(phases(b, 1)).toEqual([[1, 1]]);
+    expect(phases(b, 1, true)).toEqual([[1, 0]]);
   });
-  it('voltar o scroll esconde de novo', () => {
-    expect(visibleBeats([{ at: 0.5, kind: 'line' }], 0.2)).toEqual([false]);
+  it('passo sai cruzando com a entrada do seguinte', () => {
+    const b = [{ at: 0.1, kind: 'step' }, { at: 0.5, kind: 'step' }];
+    expect(phases(b, 0.5)).toEqual([[1, 0.5], [0, 0]]);
+    expect(phases(b, 0.57)).toEqual([[1, 1], [0.5, 0]]);
+  });
+  it('"until" fecha o beat em volta do ponto', () => {
+    expect(phases([{ at: 0, kind: 'line', until: 0.3 }], 0.3)).toEqual([[1, 0.5]]);
+  });
+  it('é reversível: mesmo local, mesmo estado', () => {
+    const b = [{ at: 0.2, kind: 'title' }];
+    expect(phases(b, 0.25)).toEqual(phases(b, 0.25));
   });
 });

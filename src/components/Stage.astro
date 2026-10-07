@@ -3,6 +3,7 @@
 ---
 <div class="stage" aria-hidden="true">
   <div class="stage__atmo"></div>
+  <canvas class="stage__frames"></canvas>
   <video class="stage__video" data-slot="0" muted playsinline preload="none" disablepictureinpicture></video>
   <video class="stage__video" data-slot="1" muted playsinline preload="none" disablepictureinpicture></video>
   <canvas class="stage__particles"></canvas>
@@ -26,19 +27,26 @@
   .stage__atmo {
     position: absolute; inset: -10%;
     background:
-      radial-gradient(60% 45% at 50% 108%, rgba(255, 107, 35, calc(var(--warm, 0) * .22)), transparent 70%),
+      radial-gradient(60% 45% at 50% 108%, rgb(var(--c-orange-rgb) / calc(var(--warm, 0) * .22)), transparent 70%),
       radial-gradient(80% 60% at 50% 100%, rgba(6, 36, 79, calc(.55 + var(--glow, 0) * .45)), transparent 75%),
       radial-gradient(70% 50% at 20% 0%, rgba(0, 26, 62, .7), transparent 70%),
       linear-gradient(180deg, #010712 0%, var(--c-ink) 45%, #021230 100%);
     transform: translate3d(calc(var(--mx, 0) * -12px), calc(var(--my, 0) * -8px), 0) scale(calc(1 + var(--zoom, 0) * .08));
     transition: background .8s linear;
   }
+  /* O vídeo é opaco e cobre o palco: com ele na tela, a atmosfera atrás não aparece e só gastaria GPU. */
+  .stage:has(.stage__frames.is-active, .stage__video.is-active) .stage__atmo { visibility: hidden; }
 
   .stage__video {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     opacity: 0; transition: opacity .45s linear;
   }
   .stage__video.is-active { opacity: 1; }
+  /* Leitor WebCodecs (runtime/frames.ts): mesmo enquadramento do vídeo; canvas é elemento substituído, aceita object-fit. */
+  .stage__frames { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .45s linear; }
+  .stage__frames.is-active { opacity: 1; }
+  .stage :global(.stage__poster) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s linear; }
+  .stage :global(.stage__poster.is-active) { opacity: 1; }
 
   .stage__particles { position: absolute; inset: 0; width: 100%; height: 100%; }
 
@@ -51,34 +59,33 @@
   }
   .visor__glass {
     position: absolute; inset: 0; border-radius: 999px;
-    border: calc(var(--w) * .045) solid rgba(255, 107, 35, calc(.25 + var(--ignite, 0) * .75));
+    border: calc(var(--w) * .045) solid rgb(var(--c-orange-rgb) / calc(.25 + var(--ignite, 0) * .75));
     background: radial-gradient(60% 120% at calc(50% + var(--mx, 0) * 12%) 50%, rgba(255, 140, 70, calc(var(--ignite, 0) * .55)), transparent 70%);
     box-shadow:
-      0 0 calc(var(--ignite, 0) * 120px) calc(var(--ignite, 0) * 18px) rgba(255, 107, 35, .35),
-      inset 0 0 calc(var(--ignite, 0) * 60px) rgba(255, 107, 35, .5);
+      0 0 calc(var(--ignite, 0) * 120px) calc(var(--ignite, 0) * 18px) rgb(var(--c-orange-rgb) / .35),
+      inset 0 0 calc(var(--ignite, 0) * 60px) rgb(var(--c-orange-rgb) / .5);
   }
   .visor__sensor {
     position: absolute; right: -6%; top: -34%; width: calc(var(--w) * .07); aspect-ratio: 1; border-radius: 50%;
     background: var(--c-orange); opacity: var(--sensor, 0);
-    box-shadow: 0 0 24px 4px rgba(255, 107, 35, .6);
+    box-shadow: 0 0 24px 4px rgb(var(--c-orange-rgb) / .6);
   }
 
   /* Sombra de leitura: garante contraste do texto sobre qualquer vídeo. */
   .stage__shade {
     position: absolute; inset: 0;
     background:
-      linear-gradient(180deg, rgba(1, 10, 24, .55) 0%, transparent 22%, transparent 55%, rgba(1, 10, 24, .82) 100%),
+      linear-gradient(180deg, rgb(var(--c-ink-rgb) / .55) 0%, transparent 22%, transparent 55%, rgb(var(--c-ink-rgb) / .82) 100%),
       radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(1, 6, 15, .75) 100%);
   }
+  /* Grão estático, do tamanho da tela e sem mix-blend: animado e em overlay ele obrigava a GPU a
+     recompor o palco inteiro a cada passo (medido numa Iris Xe: era a camada mais cara). */
   .stage__grain {
-    position: absolute; inset: -50%; opacity: .07; mix-blend-mode: overlay;
+    position: absolute; inset: 0; opacity: .045;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    animation: grain 1.2s steps(6) infinite;
   }
-  @keyframes grain { 0% { transform: translate(0, 0); } 50% { transform: translate(-4%, 3%); } 100% { transform: translate(3%, -2%); } }
 
   @media (prefers-reduced-motion: reduce) {
-    .stage__grain { animation: none; }
     .stage.is-shaking { animation: none; }
   }
 </style>

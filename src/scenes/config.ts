@@ -16,8 +16,9 @@ const def = (id: SceneId, range: [number, number], enabled = true): Scene => {
   const own = media[id] ?? {};
   const slice = slices[id];
   // Sem o clipe do mergulho, o prólogo segura o 1º quadro do pouso.
-  if (story && id === 'prelude' && !slice) return { id, range, enabled, slice: [0, 0], media: { desktop: story.desktop, mobile: story.mobile } };
-  if (story && slice) return { id, range, enabled, slice, media: { desktop: story.desktop, mobile: story.mobile, poster: own.poster } };
+  const video = story && { desktop: story.desktop, mobile: story.mobile, desktopIndex: story.desktopIndex, mobileIndex: story.mobileIndex };
+  if (video && id === 'prelude' && !slice) return { id, range, enabled, slice: [0, 0], media: video };
+  if (video && slice) return { id, range, enabled, slice, media: { ...video, poster: own.poster } };
   return { id, range, enabled, media: own };
 };
 
@@ -26,7 +27,8 @@ export const scenes: Scene[] = [
   // Prólogo: mergulho pelas nuvens que termina no 1º quadro do pouso.
   def('prelude', [-0.12, 0]),
   def('impact', [0, 0.12]),
-  def('awakening', [0.12, 0.22]),
+  // Mais rolagem que as vizinhas: o slogan precisa de tempo na tela.
+  def('awakening', [0.12, 0.27]),
   def('city', [0.22, 0.32]),
   def('analysis', [0.32, 0.43]),
   def('action', [0.43, 0.68]),
@@ -37,4 +39,4 @@ export const scenes: Scene[] = [
 ];
 
 /** Altura total da história em viewports, distribuída pelas faixas. */
-export const STORY_VH = 1790;
+export const STORY_VH = 1870;

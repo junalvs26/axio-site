@@ -2,7 +2,8 @@ export type SceneId =
   | 'prelude' | 'impact' | 'awakening' | 'city' | 'analysis' | 'action'
   | 'solution' | 'transformation' | 'proof' | 'final';
 
-export interface SceneMedia { desktop?: string; mobile?: string; poster?: string }
+/** desktopIndex/mobileIndex: índice de quadros do vídeo (leitor WebCodecs, ver runtime/frames.ts). */
+export interface SceneMedia { desktop?: string; mobile?: string; poster?: string; desktopIndex?: string; mobileIndex?: string }
 
 export interface Scene {
   id: SceneId;

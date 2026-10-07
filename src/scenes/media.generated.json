@@ -24,9 +24,11 @@
     "poster": "/scenes/solution/poster.avif?v=fe699cd814"
   },
   "story": {
-    "desktop": "/scenes/story/desktop.mp4?v=cfa48f527b",
-    "mobile": "/scenes/story/mobile.mp4?v=7075127422",
-    "poster": "/scenes/story/poster.avif?v=1cef1f87f2"
+    "desktop": "/scenes/story/desktop.mp4?v=0ee5612719",
+    "mobile": "/scenes/story/mobile.mp4?v=e88c9e79e4",
+    "poster": "/scenes/story/poster.avif?v=1cef1f87f2",
+    "desktopIndex": "/scenes/story/desktop.json?v=98de338ff7",
+    "mobileIndex": "/scenes/story/mobile.json?v=816a1f0120"
   },
   "transformation": {
     "poster": "/scenes/transformation/poster.avif?v=158e0dd099"

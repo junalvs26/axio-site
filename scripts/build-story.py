@@ -1,15 +1,21 @@
 # Junta os clipes das cenas num único vídeo contínuo para o scroll percorrer sem trocar de
 # arquivo. Entre cenas entram "pontes": clipes gerados do último quadro de uma cena até o
 # primeiro da seguinte, então não há corte em lugar nenhum.
-# Gera public/scenes/story/{desktop,mobile}.mp4 e src/scenes/story.generated.json com a
-# fatia [início, fim] de cada cena no vídeo (cada ponte é dividida ao meio entre as vizinhas).
-# Uso: python scripts/build-story.py
+# Gera public/scenes/story/{desktop,mobile}.mp4 e, ao lado, {desktop,mobile}.json: o índice de
+# quadros (codec, avcC, posição e tamanho de cada quadro no arquivo). Com ele a página baixa só o
+# trecho em volta da rolagem (Range) e decodifica cada quadro com WebCodecs, sem buscar no <video>.
+# src/scenes/story.generated.json guarda a fatia [início, fim] de cada cena no vídeo
+# (cada ponte é dividida ao meio entre as vizinhas).
+# Uso: python scripts/build-story.py            (recodifica e indexa)
+#      python scripts/build-story.py --index [pasta]  (só indexa {desktop,mobile}.mp4 já prontos; padrão public/scenes/story)
+import base64
 import json
+import sys
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-FPS = 30
+FPS = 24  # 24: −20% de peso num vídeo todo-keyframe; scrub segue por tempo, não por quadro
 
 # (cena ou None para ponte, clipe, duração usada)
 SCENES = [
@@ -63,12 +69,12 @@ def timings():
 # (sem CABAC/deblocking) o 1080p fica em ~13–26 ms por salto com GPU, no nível do antigo 720p,
 # com bem mais detalhe. Medido em 2026-10-05; -g maior que 1 dava picos de 150 ms.
 FORMATS = {
-    'desktop': ('scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos,crop=1920:1080', 28),  # 28: cabe no limite de 100 MB por arquivo do GitHub
-    'mobile': ('scale=720:1280:force_original_aspect_ratio=increase:flags=lanczos,crop=720:1280', 23),
+    'desktop': ('scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos,crop=1920:1080', 30),
+    'mobile': ('scale=720:1280:force_original_aspect_ratio=increase:flags=lanczos,crop=720:1280', 27),
 }
 
 
-def build(fmt):
+def build(fmt, slices):
     scale, crf = FORMATS[fmt]
     seq = clips()
     args, chains = [], []
@@ -83,11 +89,52 @@ def build(fmt):
                     '-map', '[out]', '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', str(crf),
                     '-g', '1', '-tune', 'fastdecode', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(dest)], check=True)
     print(f'ok -> {dest.relative_to(ROOT)} ({dest.stat().st_size / 1e6:.1f} MB)')
+    index(dest)
+
+
+def avcc(path):
+    """Caixa avcC do arquivo (SPS/PPS): a 'description' que o VideoDecoder precisa."""
+    data = path.read_bytes()
+    at = data.index(b'avcC')
+    size = int.from_bytes(data[at - 4:at], 'big')
+    return data[at + 4:at - 4 + size]
+
+
+def index(path):
+    """Índice de quadros para o leitor WebCodecs: todo quadro é keyframe, então cada um decodifica sozinho."""
+    out = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+                          'packet=pos,size,flags:stream=width,height,r_frame_rate', '-of', 'json', str(path)],
+                         check=True, capture_output=True, text=True).stdout
+    probe = json.loads(out)
+    packets = probe['packets']
+    assert all('K' in p['flags'] for p in packets), 'todo quadro precisa ser keyframe (-g 1)'
+    pos = [int(p['pos']) for p in packets]
+    sizes = [int(p['size']) for p in packets]
+    # Quadros contíguos e em ordem: um trecho de quadros é um único Range [pos[a], pos[b] + size[b]).
+    assert all(pos[i + 1] == pos[i] + sizes[i] for i in range(len(pos) - 1)), 'quadros fora de ordem no mdat'
+    desc = avcc(path)
+    st = probe['streams'][0]
+    num, den = (int(x) for x in st['r_frame_rate'].split('/'))
+    meta = {
+        'codec': 'avc1.' + desc[1:4].hex(),
+        'description': base64.b64encode(desc).decode(),
+        'width': st['width'], 'height': st['height'], 'fps': num / den,
+        'start': pos[0], 'sizes': sizes,
+    }
+    dest = path.with_suffix('.json')
+    dest.write_text(json.dumps(meta, separators=(',', ':')))
+    print(f'   índice -> {dest} ({len(sizes)} quadros, {meta["codec"]})')
 
 
 if __name__ == '__main__':
     t, total = timings()
+    if '--index' in sys.argv:
+        for fmt in FORMATS:
+            at = sys.argv.index('--index')
+            folder = Path(sys.argv[at + 1]) if len(sys.argv) > at + 1 else ROOT / 'public/scenes/story'
+            index(folder / f'{fmt}.mp4')
+        sys.exit(0)
     for fmt in FORMATS:
-        build(fmt)
+        build(fmt, t)
     (ROOT / 'src/scenes/story.generated.json').write_text(json.dumps(t, indent=2) + '\n')
     print(f'duração total {total:.2f}s', t)

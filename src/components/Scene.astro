@@ -38,29 +38,34 @@ const heightVh = Math.round((scene.range[1] - scene.range[0]) * STORY_VH);
 
   /* Composições por cena: o texto nunca fica no mesmo lugar duas vezes. */
   [data-layout='prelude'] { align-content: end; justify-items: center; text-align: center; padding-bottom: 8vh; }
- { align-content: end; justify-items: center; text-align: center; }
-  [data-layout='awakening'] { align-content: center; justify-items: center; text-align: center; padding-top: 22vh; }
+  [data-layout='awakening'] { align-content: center; justify-items: center; text-align: center; padding-top: 22vh; }
   [data-layout='city'] { align-content: end; max-width: 1440px; }
   [data-layout='city'] > :global(*) { max-width: 26ch; }
+  /* ch do bloco é medido na fonte do corpo; o título já se limita em 18ch na própria fonte. */
+  [data-layout='city'] > :global(.beat--title) { max-width: none; }
   [data-layout='city'] > :global(.beat--line) { max-width: 46ch; }
-  [data-layout='analysis'] { align-content: center; justify-items: start; max-width: 560px; margin-right: 0; }
+  /* O feixe e o clarão do vídeo ficam na metade de cima: o texto mora no terço escuro de baixo. */
+  [data-layout='analysis'] { align-content: end; justify-items: start; padding-bottom: 7vh; }
+  [data-layout='analysis'] :global(.readout) { width: min(100%, 880px); }
+  @media (min-width: 900px) {
+    [data-layout='analysis'] :global(.readout__list) { grid-template-columns: 1fr 1fr; column-gap: 2.5rem; }
+  }
+  /* Como funciona: lista um pouco maior que a da varredura. */
+  [data-layout='solution'] :global(.readout__label) { font-size: .85rem; }
+  [data-layout='solution'] :global(.readout__list strong) { font-size: clamp(1.25rem, 1.7vw, 1.5rem); }
+  [data-layout='solution'] :global(.readout__text) { font-size: clamp(1.05rem, 1.3vw, 1.2rem); color: var(--c-text); }
+  /* Celular: a lista vira uma coluna alta; encosta embaixo e aperta os itens para não subir até o feixe. */
+  @media (max-width: 899px) {
+    [data-layout='analysis'] { padding-bottom: 3vh; gap: .75rem; }
+    [data-layout='analysis'] :global(.readout__list) { gap: .7rem; }
+  }
   [data-layout='action'] { align-content: end; }
   [data-layout='solution'] { align-content: center; }
   [data-layout='transformation'] { align-content: start; justify-items: end; text-align: right; padding-top: 8vh; }
   [data-layout='final'] { align-content: center; justify-items: center; text-align: center; padding-top: 38vh; }
 
-  /* Textos reagem à velocidade do scroll: inclinam, deslizam contra o movimento, desfocam de
-     leve e abrem o espaçamento; ao parar, voltam suavemente (--vel/--speed vêm de velocity.ts). */
   :global(html.is-cinema) .scene__beats {
-    transform: translate3d(0, calc(var(--vel, 0) * -16px), 0) skewY(calc(var(--vel, 0) * -2.2deg));
-    filter: blur(calc(var(--speed, 0) * 1.4px));
-    transition: transform .25s linear, filter .25s linear;
     will-change: transform;
-  }
-  :global(html.is-cinema) .scene__beats :global(.title),
-  :global(html.is-cinema) .scene__beats :global(.step__title) {
-    letter-spacing: calc(-.03em + var(--speed, 0) * .07em);
-    transition: letter-spacing .25s linear;
   }
 
   /* Modo cinema: a seção ganha altura de scroll e o quadro fica fixo enquanto a cena roda. */

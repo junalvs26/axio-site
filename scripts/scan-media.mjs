@@ -3,7 +3,7 @@ import { existsSync, readdirSync, writeFileSync, mkdirSync, readFileSync } from 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
-const FILES = { desktop: 'desktop.mp4', mobile: 'mobile.mp4', poster: 'poster.avif' };
+const FILES = { desktop: 'desktop.mp4', mobile: 'mobile.mp4', poster: 'poster.avif', desktopIndex: 'desktop.json', mobileIndex: 'mobile.json' };
 
 export function scanMedia(root) {
   const out = {};

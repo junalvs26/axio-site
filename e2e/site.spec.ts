@@ -12,6 +12,10 @@ async function scrollToScene(page: Page, id: string, local: number) {
   await page.waitForTimeout(400);
 }
 
+/** Sem WebCodecs: o palco usa o <video> (fallback de navegadores antigos). */
+const withoutWebCodecs = (page: Page) => page.addInitScript(() => { delete (window as { VideoDecoder?: unknown }).VideoDecoder; });
+const frame = (page: Page) => page.locator('.stage__frames').evaluate((c) => Number(c.dataset.frame ?? -1));
+
 test.describe('sem JavaScript', () => {
   test.use({ javaScriptEnabled: false });
   test('todas as seções e textos aparecem em ordem, com h1 único', async ({ page }) => {
@@ -41,7 +45,7 @@ test.describe('cinema', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass(/is-cinema/);
     for (const id of order) await scrollToScene(page, id, 0.9);
-    await expect(page.locator('[data-chapter="final"]')).toHaveAttribute('aria-current', 'step');
+    await expect(page.locator('[data-scene="final"] .cta-final')).toBeVisible();
     expect(errors).toEqual([]);
   });
 
@@ -60,21 +64,37 @@ test.describe('cinema', () => {
     await expect(on).toContainText('Consultoria de IA');
   });
 
-  test('índice de capítulos leva à cena certa', async ({ page }) => {
+  test('topo tem só a marca, e ela volta ao início', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await page.locator('[data-chapter="action"]').click();
-    await expect(page.locator('[data-chapter="action"]')).toHaveAttribute('aria-current', 'step', { timeout: 4000 });
-    // cenas anteriores ficam no estado final, posteriores zeradas — nada preso no meio
-    await expect(page.locator('[data-scene="analysis"] .beat.is-on')).toHaveCount(2);
-    await expect(page.locator('[data-scene="solution"] .beat.is-on')).toHaveCount(0);
-    await page.evaluate(() => window.scrollTo(0, document.querySelector<HTMLElement>('[data-scene="solution"]')!.offsetTop - innerHeight * 3));
-    await page.locator('[data-chapter="city"]').click();
-    await expect(page.locator('[data-chapter="city"]')).toHaveAttribute('aria-current', 'step', { timeout: 4000 });
-    await expect(page.locator('[data-scene="action"] .beat.is-on')).toHaveCount(0);
+    await expect(page.locator('.nav a')).toHaveCount(1);
+    await expect(page.locator('footer')).toHaveCount(0);
+    await scrollToScene(page, 'action', 0.5);
+    await page.locator('.nav__brand').click();
+    await expect.poll(() => page.evaluate(() => scrollY), { timeout: 4000 }).toBeLessThan(50);
   });
 
-  test('vídeo da cena acompanha o scroll', async ({ page }) => {
+  test('vídeo da cena acompanha o scroll (quadros no canvas)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await scrollToScene(page, 'city', 0.1);
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/, { timeout: 5000 });
+    await expect(page.locator('.stage__video.is-active')).toHaveCount(0);
+    const f1 = await frame(page);
+    await scrollToScene(page, 'city', 0.8);
+    await expect.poll(() => frame(page), { timeout: 3000 }).toBeGreaterThan(f1 + 12);
+    await expect(page.locator('.visor')).toHaveCSS('opacity', '0');
+  });
+
+  test('parado no topo, o palco já mostra o vídeo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/, { timeout: 5000 });
+    expect(await frame(page)).toBe(0);
+  });
+
+  test('sem WebCodecs, o <video> acompanha o scroll', async ({ page }) => {
+    await withoutWebCodecs(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await scrollToScene(page, 'city', 0.1);
@@ -85,18 +105,15 @@ test.describe('cinema', () => {
     await page.waitForTimeout(400);
     const t2 = await video.evaluate((v: HTMLVideoElement) => v.currentTime);
     expect(t2).toBeGreaterThan(t1 + 0.5);
-    await expect(page.locator('.visor')).toHaveCSS('opacity', '0');
   });
 
-  test('CTA visível em qualquer ponto no celular', async ({ page }) => {
+  test('celular: nada vaza na horizontal em nenhuma cena', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto('/');
     for (const id of order) {
       await scrollToScene(page, id, 0.5);
-      await expect(page.locator('.nav__cta')).toBeInViewport();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     }
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
-    expect(overflow).toBe(false);
   });
 });
 
@@ -105,7 +122,9 @@ test('salto instantâneo não deixa cena intermediária presa no meio', async ({
   await page.goto('/');
   await scrollToScene(page, 'analysis', 0.1); // só o kicker aceso
   await scrollToScene(page, 'final', 0.5); // pula direto, sem passar pelo resto
-  await expect(page.locator('[data-scene="analysis"] .beat.is-on')).toHaveCount(2);
+  // a cena pulada fica inteira, já saída (como se tivesse rolado por ela), nunca no meio
+  await expect(page.locator('[data-scene="analysis"] .beat.is-on')).toHaveCount(0);
+  await expect(page.locator('[data-scene="analysis"] .beat').last()).toHaveCSS('--in', '1.000');
   await scrollToScene(page, 'impact', 0.2); // volta direto ao início
   await expect(page.locator('[data-scene="final"] .beat.is-on')).toHaveCount(0);
 });
@@ -113,44 +132,39 @@ test('salto instantâneo não deixa cena intermediária presa no meio', async ({
 test.describe('revisão final', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('troca rápida entre cenas nunca deixa vídeo de outra cena ativo', async ({ page }) => {
+  test('vai e volta rápido entre cenas sem o palco ficar vazio', async ({ page }) => {
     await page.goto('/');
     await scrollToScene(page, 'city', 0.2);
-    await expect(page.locator('.stage__video.is-active')).toHaveCount(1, { timeout: 5000 });
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/, { timeout: 5000 });
     for (let k = 0; k < 3; k++) {
       await page.evaluate(() => { const el = document.querySelector<HTMLElement>('[data-scene="city"]')!; scrollTo(0, el.offsetTop + 50); });
       await page.waitForTimeout(30);
-      await page.evaluate(() => { const el = document.querySelector<HTMLElement>('[data-scene="analysis"]')!; scrollTo(0, el.offsetTop + 50); });
+      await page.evaluate(() => { const el = document.querySelector<HTMLElement>('[data-scene="final"]')!; scrollTo(0, el.offsetTop + 50); });
       await page.waitForTimeout(30);
     }
-    // logo após a troca nenhum vídeo da cena anterior pode continuar visível
-    const stale = await page.locator('.stage__video.is-active').evaluateAll((vs) => vs.filter((v) => !v.getAttribute('src')?.includes('analysis')).length);
-    expect(stale).toBe(0);
-    await page.waitForTimeout(1500);
-    const srcs = await page.locator('.stage__video.is-active').evaluateAll((vs) => vs.map((v) => v.getAttribute('src')));
-    expect(srcs).toHaveLength(1);
-    expect(srcs[0]).toMatch(/^\/scenes\/analysis\/desktop\.mp4\?v=/);
-    await scrollToScene(page, 'action', 0.2);
-    await expect(page.locator('.stage__video.is-active')).toHaveCount(0);
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/);
+    // assenta no quadro da cena final (60,5 s × 24 fps em diante)
+    await expect.poll(() => frame(page), { timeout: 3000 }).toBeGreaterThan(60 * 24);
   });
 
   test('se o JS falhar, o conteúdo continua visível', async ({ page }) => {
     await page.route('**/_astro/*.js', (r) => r.abort());
     await page.goto('/');
     await page.waitForTimeout(5000);
-    const beat = page.locator('.beat', { hasText: 'Toda empresa produz mais informação' });
+    const beat = page.locator('.beat', { hasText: 'A Axio enxerga tudo o que a sua empresa produz' });
     await expect(beat).toHaveCSS('opacity', '1');
   });
 
-  test('resize sem mudar orientação não recarrega o vídeo', async ({ page }) => {
+  test('resize sem mudar orientação não reabre o vídeo', async ({ page }) => {
+    const opened: string[] = [];
+    page.on('request', (r) => { if (r.url().includes('/scenes/story/') && r.url().includes('.json')) opened.push(r.url()); });
     await page.goto('/');
     await scrollToScene(page, 'city', 0.3);
-    const v = page.locator('.stage__video.is-active');
-    await expect(v).toHaveCount(1, { timeout: 5000 });
-    const slot = await v.getAttribute('data-slot');
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/, { timeout: 5000 });
     await page.setViewportSize({ width: 1440, height: 820 });
     await page.waitForTimeout(800);
-    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('data-slot', slot!);
+    expect(opened).toHaveLength(1);
+    await expect(page.locator('.stage__frames')).toHaveClass(/is-active/);
   });
 
   test('parado, o palco não reescreve estilos a cada quadro', async ({ page }) => {
@@ -167,12 +181,21 @@ test.describe('revisão final', () => {
     expect(writes).toBe(0);
   });
 
-  test('vídeo mobile quebrado cai para o desktop', async ({ page }) => {
+  test('vídeo mobile quebrado cai para o desktop (<video>)', async ({ page }) => {
+    await withoutWebCodecs(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.route('**/scenes/city/mobile.mp4*', (r) => r.fulfill({ status: 404, body: '' }));
+    await page.route('**/scenes/story/mobile.mp4*', (r) => r.fulfill({ status: 404, body: '' }));
     await page.goto('/');
     await scrollToScene(page, 'city', 0.3);
-    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', /^\/scenes\/city\/desktop\.mp4\?v=/, { timeout: 6000 });
+    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', /^\/scenes\/story\/desktop\.mp4\?v=/, { timeout: 6000 });
+  });
+
+  test('índice de quadros quebrado cai para o <video>', async ({ page }) => {
+    await page.route('**/scenes/story/desktop.json*', (r) => r.fulfill({ status: 404, body: '' }));
+    await page.goto('/');
+    await scrollToScene(page, 'city', 0.3);
+    await expect(page.locator('.stage__video.is-active')).toHaveAttribute('src', /^\/scenes\/story\/desktop\.mp4\?v=/, { timeout: 6000 });
+    await expect(page.locator('.stage__frames')).not.toHaveClass(/is-active/);
   });
 
   test('beats invisíveis não recebem foco', async ({ page }) => {

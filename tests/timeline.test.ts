@@ -32,8 +32,8 @@ describe('locate', () => {
     expect(local).toBe(0);
   });
   it('meio do despertar → awakening local 0.5', () => {
-    // faixas brutas: prólogo 0,12 + impact 0,12 + metade do despertar 0,05, sobre o total 1,12
-    const { scene, local } = locate(0.29 / 1.12, list);
+    // faixas brutas: prólogo 0,12 + impact 0,12 + metade do despertar 0,075, sobre o total 1,17
+    const { scene, local } = locate(0.315 / 1.17, list);
     expect(scene.id).toBe('awakening');
     expect(local).toBeCloseTo(0.5);
   });

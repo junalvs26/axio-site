@@ -1,0 +1,57 @@
+---
+import { services, cta } from '../content/site';
+---
+<!-- Depois da história: leitura calma, fundo sólido sobre o palco, sem animação presa à rolagem. -->
+<section class="services" id="servicos" aria-labelledby="servicos-titulo">
+  <div class="services__inner">
+    <header class="services__head">
+      <h2 id="servicos-titulo">{services.title}</h2>
+      <p>{services.intro}</p>
+    </header>
+    <ol class="services__list">
+      {services.items.map((s, i) => (
+        <li>
+          <span class="services__no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3>{s.name}</h3>
+          <p>{s.text}</p>
+        </li>
+      ))}
+    </ol>
+    <a class="services__cta" href={cta.href} data-cta>{cta.label} <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<style>
+  .services { position: relative; z-index: 2; background: var(--c-ink); padding: clamp(5rem, 12vh, 9rem) var(--gutter) clamp(4rem, 10vh, 7rem); }
+  /* O vídeo se dissolve no fundo da seção em vez de terminar numa linha seca. */
+  .services::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 28vh; pointer-events: none;
+    background: linear-gradient(180deg, transparent, var(--c-ink));
+  }
+  .services__inner { max-width: 1180px; margin: 0 auto; }
+  .services__head { display: grid; gap: 1rem; max-width: 40rem; margin-bottom: clamp(3rem, 7vh, 5rem); }
+  .services__head h2 { margin: 0; font: 400 clamp(2.2rem, 4.4vw, 4rem)/1.04 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
+  .services__head p { margin: 0; color: var(--c-dim); font-size: clamp(1.1rem, 1.4vw, 1.3rem); }
+
+  .services__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--c-line); }
+  .services__list li {
+    display: grid; grid-template-columns: 3.5rem minmax(0, 20rem) minmax(0, 1fr); column-gap: 1.5rem; align-items: baseline;
+    padding: clamp(1.4rem, 3vh, 2rem) 0; border-bottom: 1px solid var(--c-line);
+  }
+  .services__no { font: 500 .9rem/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--c-orange); }
+  .services__list h3 { margin: 0; font: 500 clamp(1.35rem, 2vw, 1.75rem)/1.2 var(--f-display); letter-spacing: -.01em; }
+  .services__list p { margin: 0; color: var(--c-dim); font-size: clamp(1.05rem, 1.25vw, 1.2rem); line-height: 1.55; max-width: 52ch; }
+
+  .services__cta {
+    display: inline-flex; align-items: center; gap: .7rem; margin-top: clamp(2.5rem, 6vh, 4rem); min-height: 48px;
+    padding: 0 1.5rem; border-radius: 999px; background: var(--c-orange); color: var(--c-ink);
+    font: 500 1rem/1 var(--f-display); text-decoration: none; transition: transform .3s var(--ease-out);
+  }
+  .services__cta:hover { transform: translateY(-2px); }
+  .services__cta:focus-visible { outline: 2px solid var(--c-text); outline-offset: 3px; }
+
+  @media (max-width: 760px) {
+    .services__list li { grid-template-columns: 2.5rem minmax(0, 1fr); row-gap: .5rem; }
+    .services__list p { grid-column: 2; }
+  }
+</style>

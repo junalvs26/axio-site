@@ -2,7 +2,7 @@ export type Tier = 'full' | 'lite' | 'static';
 
 export interface Env { reducedMotion: boolean; saveData: boolean; deviceMemory?: number; effectiveType?: string }
 
-/** full = cinema completo · lite = sem partículas/cursor · static = página editorial. */
+/** full = cinema completo · lite = posters no palco, sem vídeo/partículas/cursor · static = página editorial. */
 export function tier(env: Env): Tier {
   if (env.reducedMotion) return 'static';
   if (env.saveData) return 'lite';
