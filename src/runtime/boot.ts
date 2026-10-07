@@ -5,6 +5,7 @@ import type { SceneId } from '../scenes/types';
 import { SceneDirector } from './director';
 import { tier, readEnv } from './capability';
 import { bindNav } from './nav';
+import { playUnlock } from './unlock';
 import { startParticles } from './particles';
 import { startCursor } from './cursor';
 import { bindSound } from './sound';
@@ -32,6 +33,7 @@ export function boot(): void {
   }
 
   director.start();
+  playUnlock();
   html.dataset.booted = '1';
   const target = location.hash.slice(1) as SceneId;
   if (target) requestAnimationFrame(() => director.goTo(target));

@@ -3,7 +3,7 @@ import type { SceneId } from '../scenes/types';
 export interface BeatItem { title: string; text: string }
 
 export interface Beat {
-  kind: 'kicker' | 'title' | 'line' | 'list' | 'step' | 'cta';
+  kind: 'kicker' | 'title' | 'line' | 'list' | 'step' | 'cta' | 'unlock';
   text: string;
   /** Usado em 'step' (número/nome do passo). */
   title?: string;
@@ -57,7 +57,8 @@ export const chapters: Partial<Record<SceneId, string>> = {
 
 export const beats: Partial<Record<SceneId, Beat[]>> = {
   prelude: [
-    { kind: 'title', text: 'Role para desbloquear o futuro.', at: 0, until: 0.35 },
+    // unlock: rótulo | palavra decifrada | promessa (runtime/unlock.ts)
+    { kind: 'unlock', text: 'Role para|desbloquear|o futuro.', at: 0, until: 0.35 },
   ],
   impact: [
     { kind: 'kicker', text: 'Sinal detectado', at: 0.2 },

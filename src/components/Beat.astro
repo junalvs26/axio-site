@@ -13,6 +13,7 @@ const stepNo = beat.kind === 'step' ? String(Astro.props.index).padStart(2, '0')
 // Títulos e linhas entram palavra por palavra (ver .w no CSS); o texto continua inteiro no HTML.
 const words = (text = '') => text.split(' ');
 const n = beat.kind === 'list' ? beat.items!.length : words(beat.text).length;
+const [lead, key, future] = beat.kind === 'unlock' ? beat.text.split('|') : [];
 ---
 <div class={`beat beat--${beat.kind}${initiallyOn ? ' is-on' : ''}`} style={`--n:${n}${initiallyOn ? ';--in:1' : ''}`} data-at={beat.at} data-until={beat.until} data-kind={beat.kind}>
   {beat.kind === 'kicker' && <p class="kicker"><span class="kicker__tick" aria-hidden="true"></span>{beat.text}</p>}
@@ -23,6 +24,13 @@ const n = beat.kind === 'list' ? beat.items!.length : words(beat.text).length;
     </h1>
   )}
   {beat.kind === 'title' && !isHero && <h2 class="title">{words(beat.text).map((w, k) => <><span class="w" style={`--k:${k}`}>{w}</span>{' '}</>)}</h2>}
+  {beat.kind === 'unlock' && (
+    <h2 class="unlock">
+      <span class="unlock__lead">{lead}</span>
+      <span class="unlock__key"><span class="unlock__word">{key}</span><span class="unlock__scan" aria-hidden="true"></span></span>
+      <span class="unlock__future">{future}</span>
+    </h2>
+  )}
   {initiallyOn && <span class="scroll-cue" aria-hidden="true"><span></span></span>}
 
   {beat.kind === 'line' && <p class="line">{words(beat.text).map((w, k) => <><span class="w" style={`--k:${k}`}>{w}</span>{' '}</>)}</p>}
@@ -79,11 +87,34 @@ const n = beat.kind === 'list' ? beat.items!.length : words(beat.text).length;
     letter-spacing: -.02em; text-wrap: balance; max-width: 18ch;
   }
   /* Abertura: a chamada é a primeira coisa na tela; o fio com a luz descendo diz "role". */
-  /* Cai sobre o céu de tempestade (raios e nuvens claras): peso maior e sombra escura difusa para ler em qualquer quadro. */
-  :global([data-layout='prelude']) .title {
-    font-size: clamp(2.4rem, 6vw, 5.5rem); font-weight: 500; max-width: 14ch; text-align: center;
-    text-shadow: 0 2px 4px rgb(var(--c-ink-rgb) / .6), 0 0 40px rgb(var(--c-ink-rgb) / .75);
+  /* Abertura em três camadas sobre o céu de tempestade: rótulo de sistema, palavra que destrava
+     (larga e pesada, eixo wdth da Saira) e a promessa em laranja de energia. Sombra escura difusa
+     para ler sobre raios e nuvens claras. A animação está em runtime/unlock.ts. */
+  .unlock {
+    margin: 0; display: grid; justify-items: center; gap: .1em; text-align: center; font-family: var(--f-display);
+    text-shadow: 0 2px 4px rgb(var(--c-ink-rgb) / .6), 0 0 40px rgb(var(--c-ink-rgb) / .8);
   }
+  .unlock__lead {
+    display: inline-flex; align-items: center; gap: 1em; margin-bottom: .6em;
+    font-size: clamp(.8rem, 1vw, .95rem); font-weight: 500; letter-spacing: .42em; text-transform: uppercase; color: var(--c-text);
+  }
+  .unlock__lead::before, .unlock__lead::after { content: ''; width: 2.5em; height: 1px; background: var(--c-orange); }
+  .unlock__key {
+    position: relative; font-size: clamp(3rem, 10vw, 9rem); font-weight: 600; font-stretch: 118%; line-height: .95;
+    letter-spacing: -.02em; color: var(--c-text);
+  }
+  .unlock__scan {
+    position: absolute; left: 0; right: 0; bottom: -.04em; height: 3px; border-radius: 3px; transform-origin: left;
+    background: var(--c-orange); box-shadow: 0 0 18px 2px rgb(var(--c-orange-rgb) / .6); opacity: 0;
+  }
+  .unlock__future {
+    --glow: .55;
+    font-size: clamp(2.2rem, 7vw, 6.25rem); font-weight: 300; font-stretch: 112%; line-height: 1; letter-spacing: -.01em;
+    color: var(--c-orange);
+    text-shadow: 0 0 calc(var(--glow) * 48px) rgb(var(--c-orange-rgb) / var(--glow)), 0 2px 4px rgb(var(--c-ink-rgb) / .5);
+  }
+  /* Até a animação montar o estado inicial, a abertura não pisca inteira (só no cinema; sem JS fica visível). */
+  :global(html.is-cinema:not([data-booted])) .unlock { visibility: hidden; }
   .scroll-cue { display: block; width: 2px; height: 72px; margin: 1.75rem auto 0; border-radius: 2px; background: rgb(232 237 245 / .35); overflow: hidden; }
   .scroll-cue span { display: block; width: 100%; height: 40%; background: var(--c-orange); animation: cue 1.8s var(--ease-out) infinite; }
   @keyframes cue { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
